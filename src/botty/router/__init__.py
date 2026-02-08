@@ -13,5 +13,8 @@ __all__ = [
     "Depends",
     "Handler",
     "HandlerResponse",
-    "BaseAnswer", "Answer", "EditAnswer", "EmptyAnswer"
+    "BaseAnswer",
+    "Answer",
+    "EditAnswer",
+    "EmptyAnswer",
 ]

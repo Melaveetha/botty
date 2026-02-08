@@ -4,7 +4,7 @@ version = "0.0.1"
 description = "Botty brings the elegance of FastAPI's dependency injection and type hints to Telegram bot development. Write clean, testable bot code with automatic dependency resolution, built-in message registry, and a developer-friendly API."
 readme = "README.md"
 authors = [
-    { name = "melaveetha", email = "retromeras@ya.ru" }
+    { name = "melaveetha", email = "melaveetha@gmail.com" }
 ]
 requires-python = ">=3.13"
 dependencies = [

@@ -108,6 +108,7 @@ class InvalidHandlerError(BottyError):
 class DependencyResolutionError(BottyError):
     """Raise when dependency resolution fails"""
 
+
 class DatabaseNotInitializedError(BottyError):
     """Raised when database engine is accessed before initialization."""
 

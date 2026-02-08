@@ -18,9 +18,9 @@ class Application:
         context_types = ContextTypes(
             context=Context, bot_data=BotData, chat_data=ChatData, user_data=UserData
         )
-        self.application: TgApplication[ExtBot, Context, UserData, ChatData, BotData, None] = (
-            TgApplicationBuilder().token(token).context_types(context_types).build()
-        )
+        self.application: TgApplication[
+            ExtBot, Context, UserData, ChatData, BotData, None
+        ] = TgApplicationBuilder().token(token).context_types(context_types).build()
         self.application.bot_data.message_registry = MessageRegistry()
         self.application.bot_data.database_provider = database_provider
         self.application.bot_data.dependency_container = DependencyContainer()

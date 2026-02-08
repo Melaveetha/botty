@@ -4,6 +4,7 @@ Task Manager Bot - Example Botty Application
 
 A personal task manager bot demonstrating all Botty framework features.
 """
+
 import os
 import sys
 from pathlib import Path
