@@ -1,4 +1,4 @@
-# Botty 🤖
+# Botty
 
 **A FastAPI-inspired modern framework for building Telegram bots with Python**
 
@@ -38,11 +38,11 @@ Traditional Telegram bot frameworks require a lot of boilerplate and make it har
 ## Installation
 
 ```bash
-pip install botty
+pip install botty-framework
 ```
 or
 ```bash
-uv add botty
+uv add botty-framework
 ```
 
 
@@ -497,7 +497,6 @@ async def start_handler(
     yield Answer(f"Hello {user.name}")
     # Session managed automatically
 ```
-
 
 ## 📄 License
 

@@ -1,5 +1,5 @@
 [project]
-name = "botty"
+name = "botty-framework"
 version = "0.0.1"
 description = "Botty brings the elegance of FastAPI's dependency injection and type hints to Telegram bot development. Write clean, testable bot code with automatic dependency resolution, built-in message registry, and a developer-friendly API."
 readme = "README.md"
@@ -16,6 +16,9 @@ dependencies = [
 [build-system]
 requires = ["uv_build>=0.8.15,<0.9.0"]
 build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "botty"
 
 [dependency-groups]
 dev = [
