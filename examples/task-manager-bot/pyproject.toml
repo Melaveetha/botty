@@ -9,7 +9,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 
 dependencies = [
-    "botty>=0.0.1",
+    "botty-framework>=0.0.1",
     "python-telegram-bot>=21.0",
     "sqlmodel>=0.0.14",
     "loguru>=0.7.0",
@@ -18,4 +18,4 @@ dependencies = [
 
 
 [tool.uv.sources]
-botty = { workspace = true }
+botty-framework = { workspace = true }

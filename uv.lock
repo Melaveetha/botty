@@ -8,7 +8,7 @@ resolution-markers = [
 
 [manifest]
 members = [
-    "botty",
+    "botty-framework",
     "task-manager-bot",
 ]
 
@@ -34,7 +34,7 @@ wheels = [
 ]
 
 [[package]]
-name = "botty"
+name = "botty-framework"
 version = "0.0.1"
 source = { editable = "." }
 dependencies = [
@@ -449,7 +449,7 @@ name = "task-manager-bot"
 version = "1.0.0"
 source = { virtual = "examples/task-manager-bot" }
 dependencies = [
-    { name = "botty" },
+    { name = "botty-framework" },
     { name = "loguru" },
     { name = "python-dotenv" },
     { name = "python-telegram-bot" },
@@ -458,7 +458,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "botty", editable = "." },
+    { name = "botty-framework", editable = "." },
     { name = "loguru", specifier = ">=0.7.0" },
     { name = "python-dotenv", specifier = ">=1.0.0" },
     { name = "python-telegram-bot", specifier = ">=21.0" },
