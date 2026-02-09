@@ -15,11 +15,6 @@ class Depends:
         self.use_cache = use_cache
         self._cache = {}
 
-    def __call__(self, dependency: Callable) -> "Depends":
-        """Allow using @Depends() as decorator."""
-        self.dependency = dependency
-        return self
-
 
 # Type alias for the handler return type
 HandlerResponse: TypeAlias = AsyncGenerator[BaseAnswer, None]
@@ -37,10 +32,11 @@ class HandlerProtocol(Protocol):
         async def my_handler(
             update: Update,
             context: Context,
-            user_repo: UserRepository
+            user_repo: UserRepository,
+            effective_user: EffectiveUser
         ) -> HandlerResponse:
             # Do some work
-            user = user_repo.get(update.effective_user.id)
+            user = user_repo.get(effective_user.id)
 
             # Yield responses
             yield Answer(text=f"Hello {user.name}!")

@@ -5,7 +5,10 @@ from typing import Annotated, Any, Type, get_args, get_origin, get_type_hints
 from sqlmodel import Session
 from telegram import Update
 
-from ..classes import BaseRepository, BaseService
+from ..classes import (
+    BaseRepository,
+    BaseService,
+)
 from ..exceptions import DependencyResolutionError
 from ..context import Context
 from .scope import RequestScope

@@ -1,4 +1,11 @@
-from botty import Router, Context, Answer, HandlerResponse, Update
+from botty import (
+    Router,
+    Context,
+    Answer,
+    HandlerResponse,
+    Update,
+    EffectiveUser,
+)
 
 from src.repositories.user_repository import UserRepositoryDependency
 
@@ -7,7 +14,10 @@ router = Router(name="start")
 
 @router.command("start")
 async def start_command(
-    update: Update, context: Context, user_repo: UserRepositoryDependency
+    update: Update,
+    context: Context,
+    user_repo: UserRepositoryDependency,
+    effective_user: EffectiveUser,
 ) -> HandlerResponse:
     """
     Handle /start command - register user and show welcome message.
@@ -17,14 +27,12 @@ async def start_command(
         context: Telegram context
         user_repo: Injected user repository
     """
-    # Get user info from Telegram
-    telegram_user = update.effective_user
 
     # Create or update user in database
     user = user_repo.create_or_update(
-        telegram_id=telegram_user.id,
-        full_name=telegram_user.full_name,
-        username=telegram_user.username,
+        telegram_id=effective_user.id,
+        full_name=effective_user.full_name,
+        username=effective_user.username,
     )
 
     # Send welcome message

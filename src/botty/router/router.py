@@ -92,9 +92,9 @@ class Router:
             @router.callback_query(r"^button_")
             async def button_handler(
                 update: Update,
-                context: Context
+                context: Context,
+                query: CallbackQuery
             ) -> HandlerResponse:
-                query = update.callback_query
                 await query.answer()  # Acknowledge the callback
 
                 yield answer(f"You clicked: {query.data}")

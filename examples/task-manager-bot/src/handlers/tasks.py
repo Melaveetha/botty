@@ -1,4 +1,12 @@
-from botty import Router, Context, Answer, EditAnswer, HandlerResponse, Update
+from botty import (
+    Router,
+    Context,
+    Answer,
+    EditAnswer,
+    HandlerResponse,
+    Update,
+    EffectiveUser,
+)
 
 from src.repositories.task_repository import TaskRepositoryDependency
 from src.repositories.user_repository import UserRepositoryDependency
@@ -14,6 +22,7 @@ async def new_task_command(
     user_repo: UserRepositoryDependency,
     task_repo: TaskRepositoryDependency,
     task_service: TaskServiceDependency,
+    effective_user: EffectiveUser,
 ) -> HandlerResponse:
     """
     Handle /new and /add commands - create a new task.
@@ -26,7 +35,7 @@ async def new_task_command(
         task_service: Injected task service
     """
     # Get user
-    user = user_repo.get_by_telegram_id(update.effective_user.id)
+    user = user_repo.get_by_telegram_id(effective_user.id)
     if not user:
         yield Answer(text="❌ User not found. Please /start first.")
         return
@@ -85,6 +94,7 @@ async def list_tasks_command(
     user_repo: UserRepositoryDependency,
     task_repo: TaskRepositoryDependency,
     task_service: TaskServiceDependency,
+    effective_user: EffectiveUser,
 ) -> HandlerResponse:
     """
     Handle /list and /tasks commands - view all tasks.
@@ -97,7 +107,7 @@ async def list_tasks_command(
         task_service: Injected task service
     """
     # Get user
-    user = user_repo.get_by_telegram_id(update.effective_user.id)
+    user = user_repo.get_by_telegram_id(effective_user.id)
     if not user:
         yield Answer(text="❌ User not found. Please /start first.")
         return
@@ -125,6 +135,7 @@ async def pending_tasks_command(
     user_repo: UserRepositoryDependency,
     task_repo: TaskRepositoryDependency,
     task_service: TaskServiceDependency,
+    effective_user: EffectiveUser,
 ) -> HandlerResponse:
     """
     Handle /pending command - view incomplete tasks only.
@@ -137,7 +148,7 @@ async def pending_tasks_command(
         task_service: Injected task service
     """
     # Get user
-    user = user_repo.get_by_telegram_id(update.effective_user.id)
+    user = user_repo.get_by_telegram_id(effective_user.id)
     if not user:
         yield Answer(text="❌ User not found. Please /start first.")
         return
@@ -163,6 +174,7 @@ async def completed_tasks_command(
     context: Context,
     user_repo: UserRepositoryDependency,
     task_repo: TaskRepositoryDependency,
+    effective_user: EffectiveUser,
 ) -> HandlerResponse:
     """
     Handle /completed command - view completed tasks.
@@ -174,7 +186,7 @@ async def completed_tasks_command(
         task_repo: Injected task repository
     """
     # Get user
-    user = user_repo.get_by_telegram_id(update.effective_user.id)
+    user = user_repo.get_by_telegram_id(effective_user.id)
     if not user:
         yield Answer(text="❌ User not found. Please /start first.")
         return
@@ -204,6 +216,7 @@ async def mark_done_command(
     user_repo: UserRepositoryDependency,
     task_repo: TaskRepositoryDependency,
     task_service: TaskServiceDependency,
+    effective_user: EffectiveUser,
 ) -> HandlerResponse:
     """
     Handle /done command - mark task as complete.
@@ -216,7 +229,7 @@ async def mark_done_command(
         task_service: Injected task service
     """
     # Get user
-    user = user_repo.get_by_telegram_id(update.effective_user.id)
+    user = user_repo.get_by_telegram_id(effective_user.id)
     if not user:
         yield Answer(text="❌ User not found. Please /start first.")
         return
@@ -264,6 +277,7 @@ async def mark_undone_command(
     user_repo: UserRepositoryDependency,
     task_repo: TaskRepositoryDependency,
     task_service: TaskServiceDependency,
+    effective_user: EffectiveUser,
 ) -> HandlerResponse:
     """
     Handle /undone command - mark task as incomplete.
@@ -276,7 +290,7 @@ async def mark_undone_command(
         task_service: Injected task service
     """
     # Get user
-    user = user_repo.get_by_telegram_id(update.effective_user.id)
+    user = user_repo.get_by_telegram_id(effective_user.id)
     if not user:
         yield Answer(text="❌ User not found. Please /start first.")
         return
@@ -320,6 +334,7 @@ async def delete_task_command(
     user_repo: UserRepositoryDependency,
     task_repo: TaskRepositoryDependency,
     task_service: TaskServiceDependency,
+    effective_user: EffectiveUser,
 ) -> HandlerResponse:
     """
     Handle /delete command - delete a task.
@@ -332,7 +347,7 @@ async def delete_task_command(
         task_service: Injected task service
     """
     # Get user
-    user = user_repo.get_by_telegram_id(update.effective_user.id)
+    user = user_repo.get_by_telegram_id(effective_user.id)
     if not user:
         yield Answer(text="❌ User not found. Please /start first.")
         return
@@ -370,6 +385,7 @@ async def search_tasks_command(
     context: Context,
     user_repo: UserRepositoryDependency,
     task_repo: TaskRepositoryDependency,
+    effective_user: EffectiveUser,
 ) -> HandlerResponse:
     """
     Handle /search command - search tasks by keyword.
@@ -381,7 +397,7 @@ async def search_tasks_command(
         task_repo: Injected task repository
     """
     # Get user
-    user = user_repo.get_by_telegram_id(update.effective_user.id)
+    user = user_repo.get_by_telegram_id(effective_user.id)
     if not user:
         yield Answer(text="❌ User not found. Please /start first.")
         return
@@ -421,6 +437,7 @@ async def stats_command(
     user_repo: UserRepositoryDependency,
     task_repo: TaskRepositoryDependency,
     task_service: TaskServiceDependency,
+    effective_user: EffectiveUser,
 ) -> HandlerResponse:
     """
     Handle /stats command - show task statistics.
@@ -433,7 +450,7 @@ async def stats_command(
         task_service: Injected task service
     """
     # Get user
-    user = user_repo.get_by_telegram_id(update.effective_user.id)
+    user = user_repo.get_by_telegram_id(effective_user.id)
     if not user:
         yield Answer(text="❌ User not found. Please /start first.")
         return

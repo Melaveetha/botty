@@ -7,7 +7,7 @@ Write clean, code with automatic dependency resolution and a developer-friendly 
 
 
 ```python
-from botty import Router, HandlerResponse, Context, Answer, Update
+from botty import Router, HandlerResponse, Context, Answer, Update, EffectiveUser
 
 router = Router()
 
@@ -15,9 +15,10 @@ router = Router()
 async def start_handler(
     update: Update,
     context: Context,
-    user_repo: UserRepository  # Auto-injected!
+    user_repo: UserRepository,  # Auto-injected!
+    effective_user: EffectiveUser # Auto-injected!
 ) -> HandlerResponse:
-    user = user_repo.get_or_create(update.effective_user.id)
+    user = user_repo.get_or_create(effective_user.id)
     yield Answer(text=f"Welcome back, {user.name}! 👋")
 ```
 
@@ -65,9 +66,10 @@ async def show_profile(
     update: Update,
     context: Context,
     user_repo: UserRepositoryDep,      # Injected automatically
-    settings_svc: SettingsServiceDep   # Services too!
+    settings_svc: SettingsServiceDep,   # Services too!
+    effective_user: EffectiveUser
 ) -> HandlerResponse:
-    user = user_repo.get(update.effective_user.id)
+    user = user_repo.get(effective_user.id)
     settings = settings_svc.get_user_settings(user.id)
 
     yield Answer(f"👤 {user.name}\n⚙️ Theme: {settings.theme}")
@@ -330,7 +332,8 @@ async def start_handler(
 async def add_todo_handler(
     update: Update,
     context: Context,
-    todo_repo: TodoRepositoryDep  # Auto-injected!
+    todo_repo: TodoRepositoryDep,  # Auto-injected!
+    effective_user: EffectiveUser
 ) -> HandlerResponse:
     """Add a new todo."""
     if not context.args:
@@ -339,7 +342,7 @@ async def add_todo_handler(
 
     task = " ".join(context.args)
     todo = Todo(
-        user_id=update.effective_user.id,
+        user_id=effective_user.id,
         task=task
     )
 
@@ -351,10 +354,11 @@ async def add_todo_handler(
 async def list_todos_handler(
     update: Update,
     context: Context,
-    todo_repo: TodoRepositoryDep  # Auto-injected!
+    todo_repo: TodoRepositoryDep,  # Auto-injected!
+    effective_user: EffectiveUser
 ) -> HandlerResponse:
     """List all todos."""
-    todos = todo_repo.get_by_user(update.effective_user.id)
+    todos = todo_repo.get_by_user(effective_user.id)
 
     if not todos:
         yield answer("📝 You have no todos!\nUse /add to create one.")
@@ -389,10 +393,11 @@ async def list_todos_handler(
 async def pending_todos_handler(
     update: Update,
     context: Context,
-    todo_repo: TodoRepositoryDep  # Auto-injected!
+    todo_repo: TodoRepositoryDep,  # Auto-injected!
+    effective_user: EffectiveUser
 ) -> HandlerResponse:
     """List incomplete todos."""
-    todos = todo_repo.get_pending(update.effective_user.id)
+    todos = todo_repo.get_pending(effective_user.id)
 
     if not todos:
         yield answer("🎉 All done! No pending todos.")
@@ -409,10 +414,11 @@ async def pending_todos_handler(
 async def toggle_todo_handler(
     update: Update,
     context: Context,
-    todo_repo: TodoRepositoryDep  # Auto-injected!
+    todo_repo: TodoRepositoryDep,  # Auto-injected!
+    callback_query: CallbackQuery,
+    effective_user: EffectiveUser
 ) -> HandlerResponse:
     """Toggle todo completion."""
-    query = update.callback_query
     await query.answer()
 
     # Extract todo ID from callback data
@@ -426,7 +432,7 @@ async def toggle_todo_handler(
         return
 
     # Refresh the list
-    todos = todo_repo.get_by_user(update.effective_user.id)
+    todos = todo_repo.get_by_user(effective_user.id)
 
     text = "📝 Your todos:\n\n"
     buttons = []
@@ -477,8 +483,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     session = Session(engine)
     try:
         user_repo = UserRepository(session)
-        user = user_repo.get(update.effective_user.id)
-        await update.message.reply_text(f"Hello {user.name}")
+        user_name = "unknown"
+        if update.effective_user is not None:
+            user = user_repo.get(update.effective_user.id)
+            user_name = user.name
+        if update.message is not None:
+            await update.message.reply_text(f"Hello {user_name}")
     finally:
         session.close()
 
@@ -491,9 +501,10 @@ application.add_handler(CommandHandler("start", start))
 async def start_handler(
     update: Update,
     context: Context,
-    user_repo: UserRepositoryDep  # Auto-injected!
+    user_repo: UserRepositoryDep,  # Auto-injected!
+    effective_user: EffectiveUser
 ) -> HandlerResponse:
-    user = user_repo.get(update.effective_user.id)
+    user = user_repo.get(effective_user.id)
     yield Answer(f"Hello {user.name}")
     # Session managed automatically
 ```

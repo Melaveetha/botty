@@ -119,3 +119,31 @@ class DatabaseNotInitializedError(BottyError):
                 "Ensure the database provider's create_engine() method has been called. "
             ),
         )
+
+
+class EffectiveUserNotFound(BottyError):
+    """Raised when update.effective_user is None"""
+
+    def __init__(self, message: str | None = None):
+        super().__init__(message=message or "Effective user was not found")
+
+
+class EffectiveChatNotFound(BottyError):
+    """Raised when update.effective_chat is None"""
+
+    def __init__(self, message: str | None = None):
+        super().__init__(message=message or "Effective chat was not found")
+
+
+class EffectiveMessageNotFound(BottyError):
+    """Raised when update.effective_message is None"""
+
+    def __init__(self, message: str | None = None):
+        super().__init__(message=message or "Effective message was not found")
+
+
+class CallbackQueryNotFound(BottyError):
+    """Raised when update.callback_query is None"""
+
+    def __init__(self, message: str | None = None):
+        super().__init__(message=message or "Callback query was not found")
