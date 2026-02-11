@@ -1,4 +1,6 @@
-from typing import Any
+from collections.abc import Callable
+from .typing import Depends
+from typing import Any, Type
 from sqlmodel import Session
 from ..context import Context
 from ..database import DatabaseProvider
@@ -27,3 +29,11 @@ class RequestScope:
 
     def to_dict(self) -> dict[str, Any]:
         return {"update": self.update, "context": self.context}
+
+    def get_dependency(self, dep: Depends) -> Any:
+        if dep.use_cache and dep.dependency in self.cache:
+            return self.cache[dep.dependency]
+        return None
+
+    def cache_dependency(self, cls: Callable | Type, dependency: Any):
+        self.cache[cls] = dependency

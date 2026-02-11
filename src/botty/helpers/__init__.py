@@ -3,14 +3,12 @@ from typing import Annotated, TypeAlias
 from telegram import CallbackQuery as TelegramCallbackQuery
 from telegram import Chat, Update, User
 from telegram import Message as TelegramMessage
-from telegram import InlineQuery as TelegramInlineQuery
 
 from ..context import Context
 from ..exceptions import (
     EffectiveChatNotFound,
     EffectiveUserNotFound,
     CallbackQueryNotFound,
-    InlineQueryNotFound,
 )
 from ..router import Depends
 
@@ -52,13 +50,6 @@ def _get_callback_quey(update: Update, context: Context) -> TelegramCallbackQuer
 
 CallbackQuery: TypeAlias = Annotated[TelegramCallbackQuery, Depends(_get_callback_quey)]
 
-
-def _get_inline_query(update: Update, context: Context) -> TelegramInlineQuery:
-    if update.inline_query is None:
-        raise InlineQueryNotFound()
-    return update.inline_query
-
-
-InlineQuery: TypeAlias = Annotated[TelegramInlineQuery, _get_inline_query]
+# TODO: support for inline queries
 
 __all__ = ["EffectiveUser", "EffectiveChat", "EffectiveMessage", "CallbackQuery"]

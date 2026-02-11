@@ -27,7 +27,6 @@ def _extract_depends(annotation):
 class DependencyContainer:
     def __init__(self):
         self._singletons: dict[Callable | Type, Any] = {}
-        self._dependency_cache: dict[Callable, Any] = {}
 
     async def resolve_dependency(self, dep: Depends, scope: RequestScope) -> Any:
         """Resolve a single dependency."""
@@ -38,15 +37,16 @@ class DependencyContainer:
             )
 
         # Check cache if enabled
-        if dep.use_cache and dep.dependency in self._dependency_cache:
-            return self._dependency_cache[dep.dependency]
+        scoped = scope.get_dependency(dep)
+        if dep.use_cache and scoped is not None:
+            return scoped
 
         # Resolve the dependency
         result = await self._call_dependency(dep.dependency, scope)
 
         # Cache if enabled
         if dep.use_cache:
-            self._dependency_cache[dep.dependency] = result
+            scope.cache_dependency(dep.dependency, result)
 
         return result
 

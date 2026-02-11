@@ -1,12 +1,27 @@
 from loguru import logger
 from collections.abc import AsyncGenerator
 
-from telegram import Update
+from telegram import Update, Message
 
 from .registry import MessageRegistry
 from ..exceptions import ChatIdNotFoundError, ResponseProcessingError
 from ..context import Context
-from .handlers import BaseAnswer, Answer, EditAnswer, EmptyAnswer
+from .handlers import (
+    BaseAnswer,
+    Answer,
+    EditAnswer,
+    PhotoAnswer,
+    DocumentAnswer,
+    AudioAnswer,
+    VideoAnswer,
+    VoiceAnswer,
+    LocationAnswer,
+    VenueAnswer,
+    ContactAnswer,
+    PollAnswer,
+    DiceAnswer,
+    EmptyAnswer,
+)
 
 
 class ResponseProcessor:
@@ -68,7 +83,7 @@ class ResponseProcessor:
 
     async def _process_single_response(
         self,
-        response: BaseAnswer,
+        answer: BaseAnswer,
         update: Update,
         context: Context,
         chat_id: int,
@@ -76,45 +91,78 @@ class ResponseProcessor:
     ) -> None:
         """Process a single response object."""
         try:
-            if isinstance(response, Answer):
-                await self._handle_answer(response, update, handler_name)
-
-            elif isinstance(response, EditAnswer):
+            if isinstance(answer, EditAnswer):
                 await self._handle_edit_previous(
-                    response, update, context, chat_id, handler_name
+                    answer, update, context, chat_id, handler_name
                 )
-
-            elif isinstance(response, EmptyAnswer):
-                logger.debug(f"Handler '{handler_name}' yielded DoNothing")
 
             else:
-                logger.warning(
-                    f"Unknown response type: {type(response).__name__} in handler '{handler_name}'"
-                )
+                await self._send_message(answer, update, handler_name)
         except Exception as e:
             raise ResponseProcessingError(
                 f"Failed to process response in handler '{handler_name}': {e}",
-                response_type=type(response).__name__,
+                response_type=type(answer).__name__,
                 handler_name=handler_name,
             ) from e
 
-    async def _handle_answer(
-        self, response: Answer, update: Update, handler_name: str
-    ) -> None:
-        """Handle Answer response - send a new message."""
+    async def _send_message(
+        self,
+        answer: BaseAnswer,
+        update: Update,
+        handler_name: str,
+    ) -> Message | None:
         if update.effective_chat is None:
-            logger.warning("Couldn't send message: effective_chat is None")
+            logger.warning(
+                f"Couldn't send message {answer.message_key}: effective_chat is None"
+            )
             return
 
         try:
-            message = await update.effective_chat.send_message(**response.to_dict())
+            match answer:
+                case Answer():
+                    message = await update.effective_chat.send_message(
+                        **answer.to_dict()
+                    )
+                case PhotoAnswer():
+                    message = await update.effective_chat.send_photo(**answer.to_dict())
+                case DocumentAnswer():
+                    message = await update.effective_chat.send_document(
+                        **answer.to_dict()
+                    )
+                case AudioAnswer():
+                    message = await update.effective_chat.send_audio(**answer.to_dict())
+                case VideoAnswer():
+                    message = await update.effective_chat.send_video(**answer.to_dict())
+                case VoiceAnswer():
+                    message = await update.effective_chat.send_voice(**answer.to_dict())
+                case LocationAnswer():
+                    message = await update.effective_chat.send_location(
+                        **answer.to_dict()
+                    )
+                case VenueAnswer():
+                    message = await update.effective_chat.send_venue(**answer.to_dict())
+                case ContactAnswer():
+                    message = await update.effective_chat.send_contact(
+                        **answer.to_dict()
+                    )
+                case PollAnswer():
+                    message = await update.effective_chat.send_poll(**answer.to_dict())
+                case DiceAnswer():
+                    message = await update.effective_chat.send_dice(**answer.to_dict())
+                case EmptyAnswer():
+                    logger.debug(f"Handler '{handler_name}' yielded EmptyAnswer")
+                    return None
+                case _:
+                    logger.warning(
+                        f"Received unknown message type: {type(answer)} in message {answer.message_key}"
+                    )
 
             # Register the message for future reference
             self.registry.register_message(
                 message=message,
-                handler_name=response.handler_name or handler_name,
-                key=response.message_key,
-                metadata=response.metadata,
+                handler_name=answer.handler_name or handler_name,
+                key=answer.message_key,
+                metadata=answer.metadata,
             )
 
             logger.debug(
@@ -122,7 +170,7 @@ class ResponseProcessor:
             )
 
         except Exception as e:
-            logger.exception(f"Failed to send message: {e}")
+            logger.exception(f"Failed to send message `{answer.message_key}`: {e}")
             raise
 
     async def _handle_edit_previous(

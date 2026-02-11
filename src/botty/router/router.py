@@ -4,7 +4,15 @@ from functools import wraps
 from typing import AsyncIterator
 
 from telegram import Update
-from telegram.ext import CallbackQueryHandler, CommandHandler, filters
+from telegram.ext import (
+    CallbackQueryHandler,
+    CommandHandler,
+    filters,
+    MessageHandler,
+    MessageReactionHandler,
+    InlineQueryHandler,
+    PrefixHandler,
+)
 
 from ..context import Context
 from .dependencies import DependencyResolver
@@ -246,10 +254,29 @@ class Router:
 
     def get_handlers(self):
         """Convert to telegram handlers."""
-        telegram_handlers = []
-        for handler_type, *args in self.handlers:
-            if handler_type == "command":
-                telegram_handlers.append(CommandHandler(args[0], args[1]))
-            elif handler_type == "callback_query":
-                telegram_handlers.append(CallbackQueryHandler(args[1], args[0]))
-        return telegram_handlers
+        handlers = []
+        for handler_info in self.handlers:
+            if handler_info[0] == "command":
+                handlers.append(CommandHandler(handler_info[1], handler_info[2]))
+            elif handler_info[0] == "callback_query":
+                handlers.append(
+                    CallbackQueryHandler(handler_info[2], pattern=handler_info[1])
+                )
+            elif handler_info[0] == "message":
+                handlers.append(
+                    MessageHandler(handler_info[1] or filters.ALL, handler_info[2])
+                )
+            elif handler_info[0] == "message_reaction":
+                handlers.append(
+                    MessageReactionHandler(handler_info[1], handler_info[2])
+                )
+            elif handler_info[0] == "inline_query":
+                handlers.append(
+                    InlineQueryHandler(handler_info[2], pattern=handler_info[1])
+                )
+            elif handler_info[0] == "prefix":
+                # Custom handler needed – suggest creating a PrefixCommandHandler
+                handlers.append(
+                    PrefixHandler(handler_info[1], handler_info[2], handler_info[3])
+                )
+        return handlers

@@ -50,19 +50,6 @@ def validate_handler(func: Callable, handler_type: str = "command") -> None:
             suggestion=f"Change 'def {func_name}(...)' to 'async def {func_name}(...)'",
         )
 
-    # Check if it's a generator (uses yield)
-    if not inspect.isasyncgenfunction(func):
-        raise InvalidHandlerError(
-            handler_name=func_name,
-            reason="Handler must be an async generator (must use 'yield')",
-            suggestion=(
-                f"Handler '{func_name}' should yield Answer objects instead of returning them.\n"
-                f"Example:\n"
-                f"  async def {func_name}(update, context):\n"
-                f"      yield Answer(text='Hello!')  # ← Use yield, not return"
-            ),
-        )
-
     # Check signature
     sig = inspect.signature(func)
     params = list(sig.parameters.keys())

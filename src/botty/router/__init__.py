@@ -3,7 +3,22 @@ from .registry import MessageRegistry
 from .router import Router
 from .typing import Depends, Handler, HandlerResponse
 from .utils import discover_routers
-from .handlers import BaseAnswer, Answer, EditAnswer, EmptyAnswer
+from .handlers import (
+    BaseAnswer,
+    Answer,
+    EditAnswer,
+    EmptyAnswer,
+    PhotoAnswer,
+    DocumentAnswer,
+    AudioAnswer,
+    VideoAnswer,
+    VoiceAnswer,
+    LocationAnswer,
+    VenueAnswer,
+    ContactAnswer,
+    PollAnswer,
+    DiceAnswer,
+)
 
 __all__ = [
     "Router",
@@ -17,4 +32,14 @@ __all__ = [
     "Answer",
     "EditAnswer",
     "EmptyAnswer",
+    "PhotoAnswer",
+    "DocumentAnswer",
+    "AudioAnswer",
+    "VideoAnswer",
+    "VoiceAnswer",
+    "LocationAnswer",
+    "VenueAnswer",
+    "ContactAnswer",
+    "PollAnswer",
+    "DiceAnswer",
 ]
