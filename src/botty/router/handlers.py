@@ -1,21 +1,21 @@
 from typing import Any, Literal, TypeAlias
 from telegram.constants import ParseMode
 from telegram import InlineKeyboardMarkup
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
 class BaseAnswer:
     text: str
-    parse_mode: str | None = ParseMode.HTML
-    reply_markup: InlineKeyboardMarkup | None = None
-    disable_notification: bool = False
-    protect_content: bool = False
+    parse_mode: str | None = field(default=ParseMode.HTML, kw_only=True)
+    reply_markup: InlineKeyboardMarkup | None = field(default=None, kw_only=True)
+    disable_notification: bool = field(default=False, kw_only=True)
+    protect_content: bool = field(default=False, kw_only=True)
 
     # For message registry
-    message_key: str | None = None
-    metadata: dict | None = None
-    handler_name: str | None = None
+    message_key: str | None = field(default=None, kw_only=True)
+    metadata: dict | None = field(default=None, kw_only=True)
+    handler_name: str | None = field(default=None, kw_only=True)
 
     @property
     def type(self) -> str:
@@ -46,13 +46,15 @@ class Answer(BaseAnswer):
 class EditAnswer(BaseAnswer):
     """Edit previous message send to current user. Keep in mind that this class can only edit text messages"""
 
-    message_id: int | None = None  # Edit specific message by id
-    message_key: str | None = None  # Reference by key
+    message_id: int | None = field(
+        default=None, kw_only=True
+    )  # Edit specific message by id
+    message_key: str | None = field(default=None, kw_only=True)  # Reference by key
 
 
 @dataclass
 class EmptyAnswer(BaseAnswer):
-    text: str | None = None
+    text: str | None = field(default=None, kw_only=True)
 
 
 @dataclass
@@ -60,7 +62,7 @@ class PhotoAnswer(BaseAnswer):
     """Send a photo."""
 
     photo: str | bytes
-    caption: str | None = None
+    caption: str | None = field(default=None, kw_only=True)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -78,8 +80,8 @@ class DocumentAnswer(BaseAnswer):
     """Send a document."""
 
     document: str | bytes
-    filename: str | None = None
-    caption: str | None = None
+    filename: str | None = field(default=None, kw_only=True)
+    caption: str | None = field(default=None, kw_only=True)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -98,10 +100,10 @@ class AudioAnswer(BaseAnswer):
     """Send an audio file."""
 
     audio: str | bytes
-    title: str | None = None
-    caption: str | None = None
-    duration: int | None = None
-    performer: str | None = None
+    title: str | None = field(default=None, kw_only=True)
+    caption: str | None = field(default=None, kw_only=True)
+    duration: int | None = field(default=None, kw_only=True)
+    performer: str | None = field(default=None, kw_only=True)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -122,10 +124,10 @@ class VideoAnswer(BaseAnswer):
     """Send a video."""
 
     video: str | bytes
-    caption: str | None = None
-    duration: int | None = None
-    width: int | None = None
-    height: int | None = None
+    caption: str | None = field(default=None, kw_only=True)
+    duration: int | None = field(default=None, kw_only=True)
+    width: int | None = field(default=None, kw_only=True)
+    height: int | None = field(default=None, kw_only=True)
     supports_streaming: bool = False
 
     def to_dict(self) -> dict[str, Any]:
@@ -148,8 +150,8 @@ class VoiceAnswer(BaseAnswer):
     """Send a voice note."""
 
     voice: str | bytes
-    caption: str | None = None
-    duration: int | None = None
+    caption: str | None = field(default=None, kw_only=True)
+    duration: int | None = field(default=None, kw_only=True)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -169,10 +171,10 @@ class LocationAnswer(BaseAnswer):
 
     latitude: float
     longitude: float
-    horizontal_accuracy: float | None = None
-    live_period: int | None = None
-    heading: int | None = None
-    proximity_alert_radius: int | None = None
+    horizontal_accuracy: float | None = field(default=None, kw_only=True)
+    live_period: int | None = field(default=None, kw_only=True)
+    heading: int | None = field(default=None, kw_only=True)
+    proximity_alert_radius: int | None = field(default=None, kw_only=True)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -196,10 +198,10 @@ class VenueAnswer(BaseAnswer):
     longitude: float
     title: str
     address: str
-    foursquare_id: str | None = None
-    foursquare_type: str | None = None
-    google_place_id: str | None = None
-    google_place_type: str | None = None
+    foursquare_id: str | None = field(default=None, kw_only=True)
+    foursquare_type: str | None = field(default=None, kw_only=True)
+    google_place_id: str | None = field(default=None, kw_only=True)
+    google_place_type: str | None = field(default=None, kw_only=True)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -223,8 +225,8 @@ class ContactAnswer(BaseAnswer):
 
     phone_number: str
     first_name: str
-    last_name: str | None = None
-    vcard: str | None = None
+    last_name: str | None = field(default=None, kw_only=True)
+    vcard: str | None = field(default=None, kw_only=True)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -247,15 +249,15 @@ class PollAnswer(BaseAnswer):
 
     question: str
     options: list[str]
-    is_anonymous: bool = True
+    is_anonymous: bool = field(default=True, kw_only=True)
     type: PollTypes = "regular"
-    allows_multiple_answers: bool = False
-    correct_option_id: int | None = None
-    explanation: str | None = None
-    explanation_parse_mode: str | None = ParseMode.HTML
-    open_period: int | None = None
-    close_date: int | None = None
-    is_closed: bool = False
+    allows_multiple_answers: bool = field(default=False, kw_only=True)
+    correct_option_id: int | None = field(default=None, kw_only=True)
+    explanation: str | None = field(default=None, kw_only=True)
+    explanation_parse_mode: str | None = field(default=ParseMode.HTML, kw_only=True)
+    open_period: int | None = field(default=None, kw_only=True)
+    close_date: int | None = field(default=None, kw_only=True)
+    is_closed: bool = field(default=False, kw_only=True)
 
     def to_dict(self) -> dict[str, Any]:
         return {

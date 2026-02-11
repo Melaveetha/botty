@@ -2,7 +2,7 @@ from .dependencies import DependencyContainer
 from .registry import MessageRegistry
 from .router import Router
 from .typing import Depends, Handler, HandlerResponse
-from .utils import discover_routers
+from .discovery import discover_routers
 from .handlers import (
     BaseAnswer,
     Answer,
