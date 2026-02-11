@@ -4,7 +4,7 @@ from functools import wraps
 from typing import AsyncIterator
 
 from telegram import Update
-from telegram.ext import CallbackQueryHandler, CommandHandler
+from telegram.ext import CallbackQueryHandler, CommandHandler, filters
 
 from ..context import Context
 from .dependencies import DependencyResolver
@@ -57,7 +57,7 @@ class Router:
                 update: Update,
                 context: Context
             ) -> HandlerResponse:
-                yield answer("Welcome! Use /help for assistance")
+                yield Answer("Welcome! Use /help for assistance")
             ```
         """
 
@@ -97,7 +97,7 @@ class Router:
             ) -> HandlerResponse:
                 await query.answer()  # Acknowledge the callback
 
-                yield answer(f"You clicked: {query.data}")
+                yield Answer(f"You clicked: {query.data}")
             ```
         """
 
@@ -109,6 +109,137 @@ class Router:
                 return await self._wrap_function(func, update, context)
 
             self.handlers.append(("callback_query", pattern, wrapper))
+            return wrapper
+
+        return decorator
+
+    def message(self, filters_obj: filters.BaseFilter | None = None):
+        """
+        Decorator for message handlers.
+
+        Args:
+            filters_obj: Filter to determine which messages to handle
+                        (e.g., filters.TEXT, filters.PHOTO, filters.VIDEO)
+
+        Example:
+            ```python
+            @router.message(filters.TEXT)
+            async def text_handler(
+                update: Update,
+                context: Context
+            ) -> HandlerResponse:
+                yield Answer(f"You said: {update.message.text}")
+            ```
+        """
+
+        def decorator(func: Callable):
+            validate_handler(func, handler_type="message")
+
+            @wraps(func)
+            async def wrapper(update: Update, context: Context):
+                return await self._wrap_function(func, update, context)
+
+            self.handlers.append(("message", filters_obj, wrapper))
+            return wrapper
+
+        return decorator
+
+    def message_reaction(self, filters_obj: filters.BaseFilter | None = None):
+        """
+        Decorator for message reaction handlers.
+
+        Args:
+            filters_obj: Filter to determine which reactions to handle
+
+        Example:
+            ```python
+            @router.message_reaction()
+            async def reaction_handler(
+                update: Update,
+                context: Context,
+                message_reaction: MessageReaction
+            ) -> HandlerResponse:
+                yield Answer(f"Reaction updated: {message_reaction.new_reaction}")
+            ```
+        """
+
+        def decorator(func: Callable):
+            validate_handler(func, handler_type="message_reaction")
+
+            @wraps(func)
+            async def wrapper(update: Update, context: Context):
+                return await self._wrap_function(func, update, context)
+
+            self.handlers.append(("message_reaction", filters_obj, wrapper))
+            return wrapper
+
+        return decorator
+
+    def inline_query(self, pattern: str | None = None):
+        """
+        Decorator for inline query handlers.
+
+        Args:
+            pattern: Regex pattern to match inline query (optional, handles all if None)
+
+        Example:
+            ```python
+            @router.inline_query()
+            async def inline_handler(
+                update: Update,
+                context: Context,
+                inline_query: InlineQuery
+            ) -> HandlerResponse:
+                # Build inline query results
+                results = [...]
+                await inline_query.answer(results)
+            ```
+        """
+
+        def decorator(func: Callable):
+            validate_handler(func, handler_type="inline_query")
+
+            @wraps(func)
+            async def wrapper(update: Update, context: Context):
+                return await self._wrap_function(func, update, context)
+
+            self.handlers.append(("inline_query", pattern, wrapper))
+            return wrapper
+
+        return decorator
+
+    def prefix(self, prefix: str, commands: str | list[str]):
+        """
+        Decorator for prefix-based command handlers.
+
+        Args:
+            prefix: The prefix to use (e.g., "!", "#", "@")
+            commands: Command name(s) without the prefix (e.g., "help" or ["help", "info"])
+
+        Example:
+            ```python
+            @router.prefix("!", "help")
+            async def help_handler(
+                update: Update,
+                context: Context
+            ) -> HandlerResponse:
+                yield Answer("This is help for prefix commands!")
+            ```
+        """
+
+        def decorator(func: Callable):
+            validate_handler(func, handler_type="prefix")
+
+            @wraps(func)
+            async def wrapper(update: Update, context: Context):
+                return await self._wrap_function(func, update, context)
+
+            if isinstance(commands, str):
+                self.handlers.append(("prefix", prefix, commands, wrapper))
+            else:
+                self.handlers.extend(
+                    ("prefix", prefix, command, wrapper) for command in commands
+                )
             return wrapper
 
         return decorator

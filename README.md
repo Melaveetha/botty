@@ -157,7 +157,7 @@ async def stats_handler(
     user_repo: UserRepositoryDep
 ) -> HandlerResponse:
     active = user_repo.get_active_users()
-    yield answer(f"📊 Active users: {len(active)}")
+    yield Answer(f"📊 Active users: {len(active)}")
 ```
 
 
@@ -319,7 +319,7 @@ async def start_handler(
     context: Context
 ) -> HandlerResponse:
     """Welcome message."""
-    yield answer(
+    yield Answer(
         "👋 Welcome to Todo Bot!\n\n"
         "Commands:\n"
         "/add <task> - Add a new todo\n"
@@ -337,7 +337,7 @@ async def add_todo_handler(
 ) -> HandlerResponse:
     """Add a new todo."""
     if not context.args:
-        yield answer("❌ Usage: /add <task description>")
+        yield Answer("❌ Usage: /add <task description>")
         return
 
     task = " ".join(context.args)
@@ -347,7 +347,7 @@ async def add_todo_handler(
     )
 
     todo_repo.create(todo)
-    yield answer(f"✅ Added: {task}")
+    yield Answer(f"✅ Added: {task}")
 
 
 @router.command("list")
@@ -361,7 +361,7 @@ async def list_todos_handler(
     todos = todo_repo.get_by_user(effective_user.id)
 
     if not todos:
-        yield answer("📝 You have no todos!\nUse /add to create one.")
+        yield Answer("📝 You have no todos!\nUse /add to create one.")
         return
 
     # Build message with buttons
@@ -382,7 +382,7 @@ async def list_todos_handler(
 
     keyboard = InlineKeyboardMarkup(buttons)
 
-    yield answer(
+    yield Answer(
         text=text,
         reply_markup=keyboard,
         message_key="todo_list"
@@ -400,14 +400,14 @@ async def pending_todos_handler(
     todos = todo_repo.get_pending(effective_user.id)
 
     if not todos:
-        yield answer("🎉 All done! No pending todos.")
+        yield Answer("🎉 All done! No pending todos.")
         return
 
     text = "⏺️ Pending todos:\n\n"
     for i, todo in enumerate(todos, 1):
         text += f"{i}. {todo.task}\n"
 
-    yield answer(text)
+    yield Answer(text)
 
 
 @router.callback_query(r"^toggle_(\d+)")
@@ -428,7 +428,7 @@ async def toggle_todo_handler(
     todo = todo_repo.toggle_complete(todo_id)
 
     if not todo:
-        yield edit_answer("❌ Todo not found")
+        yield EditAnswer("❌ Todo not found")
         return
 
     # Refresh the list
@@ -451,7 +451,7 @@ async def toggle_todo_handler(
 
     keyboard = InlineKeyboardMarkup(buttons)
 
-    yield edit_answer(
+    yield EditAnswer(
         text=text,
         reply_markup=keyboard,
         message_key="todo_list"

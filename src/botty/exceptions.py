@@ -147,3 +147,10 @@ class CallbackQueryNotFound(BottyError):
 
     def __init__(self, message: str | None = None):
         super().__init__(message=message or "Callback query was not found")
+
+
+class InlineQueryNotFound(BottyError):
+    """Raised when update.inline_query is None"""
+
+    def __init__(self, message: str | None = None):
+        super().__init__(message=message or "Inline query was not found")
