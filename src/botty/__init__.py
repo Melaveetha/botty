@@ -1,14 +1,9 @@
-from telegram import Message, Update
-
 from .app import AppBuilder, Application
-from .classes import BaseRepository, BaseService
+from .classes import BaseRepository, BaseService, Update, Message
 from .context import Context
 from .database import DatabaseProvider, SQLiteProvider
 from .exceptions import BottyError
-from .router import (
-    HandlerResponse,
-    Router,
-    Depends,
+from .handlers import (
     BaseAnswer,
     Answer,
     EditAnswer,
@@ -24,6 +19,7 @@ from .router import (
     PollAnswer,
     DiceAnswer,
 )
+from .router import HandlerResponse, Router, Depends
 from .helpers import EffectiveChat, EffectiveUser, EffectiveMessage, CallbackQuery
 
 __all__ = [

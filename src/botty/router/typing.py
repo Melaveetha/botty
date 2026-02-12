@@ -1,10 +1,9 @@
 from collections.abc import AsyncGenerator, Callable
 from typing import Any, Protocol, Type, TypeAlias, runtime_checkable
 
-from telegram import Update
-
 from ..context import Context
-from .handlers import BaseAnswer
+from ..classes import Update
+from ..handlers import BaseAnswer
 
 
 class Depends:
@@ -13,7 +12,6 @@ class Depends:
     def __init__(self, dependency: Callable | Type, *, use_cache: bool = True):
         self.dependency = dependency
         self.use_cache = use_cache
-        self._cache = {}
 
 
 # Type alias for the handler return type

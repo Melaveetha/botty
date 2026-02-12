@@ -1,8 +1,11 @@
-from telegram import Message
-from loguru import logger
 import time
-from dataclasses import field, dataclass
 from collections import deque
+from dataclasses import dataclass, field
+
+from loguru import logger
+
+from ..classes import Message
+from ..handlers import EditAnswer
 
 
 @dataclass
@@ -238,3 +241,43 @@ class MessageRegistry:
                     del self._handler_registry[record.handler_name]
             except ValueError:
                 pass
+
+    def find_message_to_edit(
+        self, answer: EditAnswer, chat_id: int, handler_name: str
+    ) -> int | None:
+        """
+        Find the message ID to edit based on answer criteria.
+
+        Priority:
+        1. Direct message ID
+        2. Message key lookup
+        3. Handler name lookup
+        4. Last message in chat
+        """
+        # 1. Direct message ID
+        if answer.message_id is not None:
+            return answer.message_id
+
+        # 2. Message key lookup
+        if answer.message_key is not None:
+            record = self.get_by_key(answer.message_key)
+            if record is not None and record.chat_id == chat_id:
+                return record.message_id
+
+        # 3. Handler name was specified by user
+        if answer.handler_name is not None:
+            records = self.get_by_handler(answer.handler_name, chat_id)
+            if len(records) > 0:
+                return records[-1].message_id
+
+        # 4. Last message from current handler
+        records = self.get_by_handler(handler_name, chat_id)
+        if len(records) > 0:
+            return records[-1].message_id
+
+        # 5. Last message in chat (fallback)
+        last_message = self.get_last_message(chat_id)
+        if last_message is not None:
+            return last_message.message_id
+
+        return None

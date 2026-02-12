@@ -1,11 +1,6 @@
-"""Task service with business logic."""
-
 import re
-from typing import Annotated, Optional, TypeAlias
 
-from telegram import Update
-
-from botty import BaseService, Context, Depends
+from botty import BaseService
 
 
 class TaskService(BaseService):
@@ -218,7 +213,7 @@ class TaskService(BaseService):
 
         return "\n".join(lines)
 
-    def validate_task_id(self, task_id_str: str) -> Optional[int]:
+    def validate_task_id(self, task_id_str: str) -> int | None:
         """
         Validate and convert task ID string to integer.
 
@@ -236,10 +231,3 @@ class TaskService(BaseService):
             pass
 
         return None
-
-
-async def task_service(update: Update, context: Context):
-    return TaskService()
-
-
-TaskServiceDependency: TypeAlias = Annotated[TaskService, Depends(task_service)]

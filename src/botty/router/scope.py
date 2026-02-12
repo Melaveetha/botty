@@ -1,10 +1,13 @@
+from botty.exceptions import DatabaseNotConfiguredError
 from collections.abc import Callable
-from .typing import Depends
 from typing import Any, Type
+
 from sqlmodel import Session
+
+from ..classes import Update
 from ..context import Context
 from ..database import DatabaseProvider
-from telegram import Update
+from .typing import Depends
 
 
 class RequestScope:
@@ -13,11 +16,13 @@ class RequestScope:
         self.context = context
         self.cache: dict = {}
         self._session: Session | None = None
-        self._provider: DatabaseProvider = context.bot_data.database_provider
+        self._provider: DatabaseProvider | None = context.bot_data.database_provider
 
     @property
     def session(self) -> Session:
         """Lazy session creation."""
+        if self._provider is None:
+            raise DatabaseNotConfiguredError(dependency_name="Session")
         if self._session is None:
             self._session = self._provider.get_session()
         return self._session

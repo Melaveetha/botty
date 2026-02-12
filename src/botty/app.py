@@ -1,19 +1,24 @@
+from loguru import logger
 from pathlib import Path
 from typing import Self
 
-from telegram.ext import Application as TgApplication, ExtBot
+from telegram.ext import Application as TgApplication
 from telegram.ext import ApplicationBuilder as TgApplicationBuilder
-from telegram.ext import ContextTypes
+from telegram.ext import ContextTypes, ExtBot
 
 from .context import BotData, ChatData, Context, UserData
 from .database import DatabaseProvider
 from .exceptions import ConfigurationError
-from .router import Router, discover_routers, MessageRegistry, DependencyContainer
+from .adapters import PTBBotAdapter
+from .router import DependencyContainer, MessageRegistry, Router, discover_routers
 
 
 class Application:
     def __init__(
-        self, token: str, database_provider: DatabaseProvider, routers: list[Router]
+        self,
+        token: str,
+        database_provider: DatabaseProvider | None,
+        routers: list[Router],
     ):
         context_types = ContextTypes(
             context=Context, bot_data=BotData, chat_data=ChatData, user_data=UserData
@@ -24,12 +29,14 @@ class Application:
         self.application.bot_data.message_registry = MessageRegistry()
         self.application.bot_data.database_provider = database_provider
         self.application.bot_data.dependency_container = DependencyContainer()
+        self.application.bot_data.bot_client = PTBBotAdapter(self.application.bot)
 
         for router in routers:
             self.application.add_handlers(router.get_handlers())
 
     def launch(self):
-        self.application.bot_data.database_provider.create_engine()
+        if self.application.bot_data.database_provider:
+            self.application.bot_data.database_provider.create_engine()
         self.application.run_polling()
 
 
@@ -71,10 +78,14 @@ class AppBuilder:
 
     def build(self) -> Application:
         if self._database_provider is None:
-            raise ConfigurationError(
-                "Database provider was not specified.",
-                suggestion='add `.database(SqlProvider("data.db")).build()` in your bot.py file',
+            logger.warning(
+                "No database provider specified. Could lead to some features not working properly."
+                "If you don't need a database, ignore this warning."
             )
+            # raise ConfigurationError(
+            #     "Database provider was not specified.",
+            #     suggestion='add `.database(SqlProvider("data.db")).build()` in your bot.py file',
+            # )
         if self._token is None:
             raise ConfigurationError(
                 "Token was not specified.",

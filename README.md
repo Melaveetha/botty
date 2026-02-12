@@ -51,22 +51,15 @@ uv add botty-framework
 
 ### FastAPI-Style Dependency Injection
 
+Botty automatically injects *repositories* and *services* just by type‑hinting them – no decorators, no `Depends()` boilerplate.
+
 ```python
-async def get_repository(update: Update, context: Context, session: Session): # ← Session handled automatically
-    return UserRepository(session)
-
-async def get_settings(update: Update, context: Context): # Database session NOT created here
-    return SettingsService()
-
-UserRepositoryDep = Annotated[UserRepository, Depends(get_repository)]
-SettingsServiceDep = Annotated[SettingsService, Depends(get_settings)]
-
 @router.command("profile")
 async def show_profile(
     update: Update,
     context: Context,
-    user_repo: UserRepositoryDep,      # Injected automatically
-    settings_svc: SettingsServiceDep,   # Services too!
+    user_repo: UserRepository,      # Injected automatically
+    settings_svc: SettingsService,   # Services too!
     effective_user: EffectiveUser
 ) -> HandlerResponse:
     user = user_repo.get(effective_user.id)
@@ -75,6 +68,35 @@ async def show_profile(
     yield Answer(f"👤 {user.name}\n⚙️ Theme: {settings.theme}")
 ```
 
+What dependencies are generated?
+1. Any class that inherits from BaseRepository gets a request‑scoped instance with an open database session.
+2. Any class that inherits from BaseService is a singleton – shared across requests.
+3. Common objects like `Update`, `Context`, `Session`, `EffectiveUser`, `EffectiveChat`, `EffectiveMessage`, and `CallbackQuery` are also injected automatically.
+
+### Custom dependencies with `Depends`
+
+For cases where automatic injection isn't enough (e.g., you need to compute a value or fetch something conditionally), Botty provides FastAPI‑style Depends.
+
+```python
+from botty import Depends, Annotated
+
+async def get_current_user(
+    update: Update,
+    user_repo: UserRepository   # ← Nested dependencies work too!
+) -> User:
+    return user_repo.get(update.effective_user.id)
+
+CurrentUser = Annotated[User, Depends(get_current_user)]
+
+@router.command("profile")
+async def profile_handler(
+    update: Update,
+    context: Context,
+    current_user: CurrentUser   # ← Injected via Depends
+) -> HandlerResponse:
+    yield Answer(f"Your profile: {current_user.name}")
+```
+Dependencies can be cached within the same request (default) or recomputed each time. They can also depend on other dependencies – the resolver handles the graph automatically.
 
 ### Message Registry & Smart Editing
 
@@ -135,7 +157,7 @@ Built-in support for the repository pattern with SQLModel:
 from botty import BaseRepository
 from sqlmodel import Session, select
 
-class UserRepository(BaseRepository[User]):
+class UserRepository(BaseRepository[User]): # Inheritance from BaseRepository allows to be injected
     model = User
 
     def get_by_telegram_id(self, telegram_id: int) -> User | None:
@@ -145,9 +167,6 @@ class UserRepository(BaseRepository[User]):
     def get_active_users(self) -> list[User]:
         statement = select(User).where(User.is_active == True)
         return list(self.session.exec(statement).all())
-
-
-UserRepositoryDep = Annotated[UserRepository, Depends(get_repository)]
 
 # Automatically injected with proper session management!
 @router.command("stats")
@@ -174,7 +193,7 @@ def wrong_handler(update: Update, context: Context):  # ❌ Forgot 'async'
 # 💡 Suggestion: Change 'def wrong_handler(...)' to 'async def wrong_handler(...)'
 ```
 
-### Built-in Database Support
+### Built-in Database Support (optional)
 
 SQLModel integration with automatic session management:
 
@@ -277,7 +296,7 @@ class Todo(SQLModel, table=True):
 # Repositories
 # ============================================================================
 
-class TodoRepository(BaseRepository[Todo]):
+class TodoRepository(BaseRepository[Todo]):  # Inheritance from BaseRepository allows to be injected
     model = Todo
 
     def get_by_user(self, user_id: int) -> list[Todo]:
@@ -301,11 +320,6 @@ class TodoRepository(BaseRepository[Todo]):
             todo.completed = not todo.completed
             self.update(todo)
         return todo
-
-def get_todo_repo(update: Update, context: Context, session: Session):
-    return TodoRepository(session)
-
-TodoRepositoryDep = Annotated[TodoRepository, Depends(get_todo_repo)]
 
 # ============================================================================
 # Handlers
@@ -501,7 +515,7 @@ application.add_handler(CommandHandler("start", start))
 async def start_handler(
     update: Update,
     context: Context,
-    user_repo: UserRepositoryDep,  # Auto-injected!
+    user_repo: UserRepository,  # Auto-injected!
     effective_user: EffectiveUser
 ) -> HandlerResponse:
     user = user_repo.get(effective_user.id)
@@ -521,7 +535,7 @@ MIT License - see LICENSE file for details
 
 ## 🗺️ Roadmap
 
-- [ ] More database providers (PostgreSQL, MySQL)
+- [ ] More database providers (PostgreSQL, MySQL, NoDatabase)
 - [ ] Conversation state management
 - [ ] Admin panel
 - [ ] CLI for scaffolding projects

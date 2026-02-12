@@ -8,9 +8,9 @@ from botty import (
     EffectiveUser,
 )
 
-from src.repositories.task_repository import TaskRepositoryDependency
-from src.repositories.user_repository import UserRepositoryDependency
-from src.services.task_service import TaskServiceDependency
+from src.repositories.task_repository import TaskRepository
+from src.repositories.user_repository import UserRepository
+from src.services.task_service import TaskService
 
 router = Router(name="tasks")
 
@@ -19,9 +19,9 @@ router = Router(name="tasks")
 async def new_task_command(
     update: Update,
     context: Context,
-    user_repo: UserRepositoryDependency,
-    task_repo: TaskRepositoryDependency,
-    task_service: TaskServiceDependency,
+    user_repo: UserRepository,
+    task_repo: TaskRepository,
+    task_service: TaskService,
     effective_user: EffectiveUser,
 ) -> HandlerResponse:
     """
@@ -91,9 +91,9 @@ async def new_task_command(
 async def list_tasks_command(
     update: Update,
     context: Context,
-    user_repo: UserRepositoryDependency,
-    task_repo: TaskRepositoryDependency,
-    task_service: TaskServiceDependency,
+    user_repo: UserRepository,
+    task_repo: TaskRepository,
+    task_service: TaskService,
     effective_user: EffectiveUser,
 ) -> HandlerResponse:
     """
@@ -132,9 +132,9 @@ async def list_tasks_command(
 async def pending_tasks_command(
     update: Update,
     context: Context,
-    user_repo: UserRepositoryDependency,
-    task_repo: TaskRepositoryDependency,
-    task_service: TaskServiceDependency,
+    user_repo: UserRepository,
+    task_repo: TaskRepository,
+    task_service: TaskService,
     effective_user: EffectiveUser,
 ) -> HandlerResponse:
     """
@@ -172,8 +172,8 @@ async def pending_tasks_command(
 async def completed_tasks_command(
     update: Update,
     context: Context,
-    user_repo: UserRepositoryDependency,
-    task_repo: TaskRepositoryDependency,
+    user_repo: UserRepository,
+    task_repo: TaskRepository,
     effective_user: EffectiveUser,
 ) -> HandlerResponse:
     """
@@ -213,9 +213,9 @@ async def completed_tasks_command(
 async def mark_done_command(
     update: Update,
     context: Context,
-    user_repo: UserRepositoryDependency,
-    task_repo: TaskRepositoryDependency,
-    task_service: TaskServiceDependency,
+    user_repo: UserRepository,
+    task_repo: TaskRepository,
+    task_service: TaskService,
     effective_user: EffectiveUser,
 ) -> HandlerResponse:
     """
@@ -274,9 +274,9 @@ async def mark_done_command(
 async def mark_undone_command(
     update: Update,
     context: Context,
-    user_repo: UserRepositoryDependency,
-    task_repo: TaskRepositoryDependency,
-    task_service: TaskServiceDependency,
+    user_repo: UserRepository,
+    task_repo: TaskRepository,
+    task_service: TaskService,
     effective_user: EffectiveUser,
 ) -> HandlerResponse:
     """
@@ -331,9 +331,9 @@ async def mark_undone_command(
 async def delete_task_command(
     update: Update,
     context: Context,
-    user_repo: UserRepositoryDependency,
-    task_repo: TaskRepositoryDependency,
-    task_service: TaskServiceDependency,
+    user_repo: UserRepository,
+    task_repo: TaskRepository,
+    task_service: TaskService,
     effective_user: EffectiveUser,
 ) -> HandlerResponse:
     """
@@ -383,8 +383,8 @@ async def delete_task_command(
 async def search_tasks_command(
     update: Update,
     context: Context,
-    user_repo: UserRepositoryDependency,
-    task_repo: TaskRepositoryDependency,
+    user_repo: UserRepository,
+    task_repo: TaskRepository,
     effective_user: EffectiveUser,
 ) -> HandlerResponse:
     """
@@ -434,9 +434,9 @@ async def search_tasks_command(
 async def stats_command(
     update: Update,
     context: Context,
-    user_repo: UserRepositoryDependency,
-    task_repo: TaskRepositoryDependency,
-    task_service: TaskServiceDependency,
+    user_repo: UserRepository,
+    task_repo: TaskRepository,
+    task_service: TaskService,
     effective_user: EffectiveUser,
 ) -> HandlerResponse:
     """

@@ -3,13 +3,13 @@ from collections.abc import Callable
 from typing import Annotated, Any, Type, get_args, get_origin, get_type_hints
 
 from sqlmodel import Session
-from telegram import Update
 
 from ..classes import (
     BaseRepository,
     BaseService,
 )
-from ..exceptions import DependencyResolutionError
+from ..classes import Update
+from ..exceptions import DependencyResolutionError, DatabaseNotConfiguredError
 from ..context import Context
 from .scope import RequestScope
 from .typing import Depends
@@ -72,13 +72,10 @@ class DependencyContainer:
                 continue
 
             if annotation != inspect.Parameter.empty:
-                injected = await self._inject(annotation, scope)
+                injected = self._inject_basic_dependencies(annotation, scope)
                 if injected is not None:
                     dep_args[param_name] = injected
                     continue
-
-            if param.default != inspect.Parameter.empty:
-                dep_args[param_name] = param.default
 
         # Call the dependency
         if inspect.iscoroutinefunction(dependency):
@@ -86,7 +83,7 @@ class DependencyContainer:
         else:
             return dependency(**dep_args)
 
-    async def _inject(self, type_hint: Type, scope: RequestScope) -> Any:
+    def _inject_basic_dependencies(self, type_hint: Type, scope: RequestScope) -> Any:
         """Inject based on type annotation."""
         if type_hint is Update:
             return scope.update
@@ -127,14 +124,28 @@ class DependencyResolver:
             annotation = type_hints.get(param_name)
 
             dep = _extract_depends(annotation)
-            if dep is not None:
-                kwargs[param_name] = await self.container.resolve_dependency(
-                    dep,
-                    scope,
-                )
-                continue
+            if dep is None:
+                if annotation is not None:
+                    try:
+                        injected = self.container._inject_basic_dependencies(
+                            annotation, scope
+                        )
+                        if injected is not None:
+                            kwargs[param_name] = injected
+                            continue
+                    except DatabaseNotConfiguredError as e:
+                        raise DatabaseNotConfiguredError(
+                            f"{e.message} (handler '{handler.__name__}', parameter '{param_name}')"  # ty: ignore [unresolved-attribute]
+                        ) from e
 
-            if param.default is not inspect.Parameter.empty:
-                kwargs[param_name] = param.default
+                raise DependencyResolutionError(
+                    message="Annotation does not contain Depends",
+                    suggestion="check that you use Annotated[YourRepository, Depends(get_your_repository)] annotation",
+                )
+
+            kwargs[param_name] = await self.container.resolve_dependency(
+                dep,
+                scope,
+            )
 
         return kwargs

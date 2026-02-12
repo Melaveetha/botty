@@ -1,6 +1,6 @@
 from typing import Any, Literal, TypeAlias
 from telegram.constants import ParseMode
-from telegram import InlineKeyboardMarkup
+from telegram import ReplyKeyboardMarkup
 from dataclasses import dataclass, field
 
 
@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 class BaseAnswer:
     text: str
     parse_mode: str | None = field(default=ParseMode.HTML, kw_only=True)
-    reply_markup: InlineKeyboardMarkup | None = field(default=None, kw_only=True)
+    reply_markup: ReplyKeyboardMarkup | None = field(default=None, kw_only=True)
     disable_notification: bool = field(default=False, kw_only=True)
     protect_content: bool = field(default=False, kw_only=True)
 

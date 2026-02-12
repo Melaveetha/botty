@@ -121,6 +121,19 @@ class DatabaseNotInitializedError(BottyError):
         )
 
 
+class DatabaseNotConfiguredError(BottyError):
+    """Raised when a database dependency is requested but no database provider is set."""
+
+    def __init__(self, dependency_name: str):
+        super().__init__(
+            message=f"Cannot inject '{dependency_name}': no database provider configured.",
+            suggestion=(
+                "Add `.database(...)` to your AppBuilder, or remove the database "
+                "dependency from your handler if the bot does not need persistence."
+            ),
+        )
+
+
 class EffectiveUserNotFound(BottyError):
     """Raised when update.effective_user is None"""
 
@@ -147,3 +160,24 @@ class CallbackQueryNotFound(BottyError):
 
     def __init__(self, message: str | None = None):
         super().__init__(message=message or "Callback query was not found")
+
+
+class EditedMessageNotFound(BottyError):
+    """Raised when update.edited_message is None"""
+
+    def __init__(self, message: str | None = None):
+        super().__init__(message=message or "EditedMessage was not found")
+
+
+class PollNotFound(BottyError):
+    """Raised when update.poll is None"""
+
+    def __init__(self, message: str | None = None):
+        super().__init__(message=message or "Poll was not found")
+
+
+class PollAnswerNotFound(BottyError):
+    """Raised when update.poll_answer is None"""
+
+    def __init__(self, message: str | None = None):
+        super().__init__(message=message or "Poll answer was not found")

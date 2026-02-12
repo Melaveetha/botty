@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from functools import wraps
 from typing import AsyncIterator
 
-from telegram import Update
+from telegram import Update as TGUpdate
 from telegram.ext import (
     CallbackQueryHandler,
     CommandHandler,
@@ -14,6 +14,8 @@ from telegram.ext import (
     PrefixHandler,
 )
 
+from ..classes import Update
+from ..adapters import PTBIncomingAdapter
 from ..context import Context
 from .dependencies import DependencyResolver
 from .response_processor import ResponseProcessor
@@ -28,6 +30,7 @@ class Router:
     def __init__(self, name: str | None = None):
         self.name = name or "router"
         self.handlers = []
+        self.incoming_adapter = PTBIncomingAdapter()
 
     @asynccontextmanager
     async def request_scope(
@@ -40,15 +43,21 @@ class Router:
         finally:
             scope.close()
 
-    async def _wrap_function(self, func: Callable, update: Update, context: Context):
+    async def _wrap_function(
+        self, func: Callable, tg_update: TGUpdate, context: Context
+    ):
+        handler_name: str = func.__name__ or "handler name"  # ty: ignore [unresolved-attribute]
         resolver = DependencyResolver(context.bot_data.dependency_container)
-        processor = ResponseProcessor(context.bot_data.message_registry)
+        processor = ResponseProcessor(
+            context.bot_data.message_registry, context.bot_data.bot_client
+        )
+        update = self.incoming_adapter.from_ptb(tg_update)
         async with self.request_scope(update, context) as scope:
             kwargs = await resolver.resolve_handler(func, scope)
 
             generator = func(update, context, **kwargs)
             return await processor.process_async_generator(
-                generator, update, context, "handler name"
+                generator, update.get_chat_id(), handler_name
             )
 
     def command(self, commands: str | list[str]):
@@ -75,7 +84,7 @@ class Router:
             validate_handler(func, handler_type="command")
 
             @wraps(func)
-            async def wrapper(update: Update, context: Context):
+            async def wrapper(update: TGUpdate, context: Context):
                 return await self._wrap_function(func, update, context)
 
             if isinstance(commands, str):
@@ -113,7 +122,7 @@ class Router:
             validate_handler(func, handler_type="callback_query")
 
             @wraps(func)
-            async def wrapper(update: Update, context: Context):
+            async def wrapper(update: TGUpdate, context: Context):
                 return await self._wrap_function(func, update, context)
 
             self.handlers.append(("callback_query", pattern, wrapper))
@@ -144,7 +153,7 @@ class Router:
             validate_handler(func, handler_type="message")
 
             @wraps(func)
-            async def wrapper(update: Update, context: Context):
+            async def wrapper(update: TGUpdate, context: Context):
                 return await self._wrap_function(func, update, context)
 
             self.handlers.append(("message", filters_obj, wrapper))
@@ -175,7 +184,7 @@ class Router:
             validate_handler(func, handler_type="message_reaction")
 
             @wraps(func)
-            async def wrapper(update: Update, context: Context):
+            async def wrapper(update: TGUpdate, context: Context):
                 return await self._wrap_function(func, update, context)
 
             self.handlers.append(("message_reaction", filters_obj, wrapper))
@@ -208,7 +217,7 @@ class Router:
             validate_handler(func, handler_type="inline_query")
 
             @wraps(func)
-            async def wrapper(update: Update, context: Context):
+            async def wrapper(update: TGUpdate, context: Context):
                 return await self._wrap_function(func, update, context)
 
             self.handlers.append(("inline_query", pattern, wrapper))
@@ -239,7 +248,7 @@ class Router:
             validate_handler(func, handler_type="prefix")
 
             @wraps(func)
-            async def wrapper(update: Update, context: Context):
+            async def wrapper(update: TGUpdate, context: Context):
                 return await self._wrap_function(func, update, context)
 
             if isinstance(commands, str):

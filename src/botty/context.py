@@ -5,12 +5,14 @@ from telegram.ext import CallbackContext, ExtBot, Application as TgApplication
 if TYPE_CHECKING:
     from .database import DatabaseProvider
     from .router import MessageRegistry, DependencyContainer
+    from .ports import TelegramBotClient
 
 
 class BotData:
     message_registry: "MessageRegistry"
     dependency_container: "DependencyContainer"
-    database_provider: "DatabaseProvider"
+    database_provider: "DatabaseProvider | None"
+    bot_client: "TelegramBotClient"
 
     def __init__(self):
         pass

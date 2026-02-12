@@ -9,8 +9,8 @@ from botty import (
     EffectiveUser,
 )
 
-from src.repositories.task_repository import TaskRepositoryDependency
-from src.repositories.user_repository import UserRepositoryDependency
+from src.repositories.task_repository import TaskRepository
+from src.repositories.user_repository import UserRepository
 
 router = Router(name="callbacks")
 
@@ -19,8 +19,8 @@ router = Router(name="callbacks")
 async def task_done_callback(
     update: Update,
     context: Context,
-    user_repo: UserRepositoryDependency,
-    task_repo: TaskRepositoryDependency,
+    user_repo: UserRepository,
+    task_repo: TaskRepository,
     query: CallbackQuery,
     effective_user: EffectiveUser,
 ) -> HandlerResponse:
@@ -67,8 +67,8 @@ async def task_done_callback(
 async def task_delete_callback(
     update: Update,
     context: Context,
-    user_repo: UserRepositoryDependency,
-    task_repo: TaskRepositoryDependency,
+    user_repo: UserRepository,
+    task_repo: TaskRepository,
     query: CallbackQuery,
     effective_user: EffectiveUser,
 ) -> HandlerResponse:
@@ -111,8 +111,8 @@ async def task_delete_callback(
 async def refresh_list_callback(
     update: Update,
     context: Context,
-    user_repo: UserRepositoryDependency,
-    task_repo: TaskRepositoryDependency,
+    user_repo: UserRepository,
+    task_repo: TaskRepository,
     query: CallbackQuery,
     effective_user: EffectiveUser,
 ) -> HandlerResponse:

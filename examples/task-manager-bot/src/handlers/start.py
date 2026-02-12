@@ -7,7 +7,7 @@ from botty import (
     EffectiveUser,
 )
 
-from src.repositories.user_repository import UserRepositoryDependency
+from src.repositories.user_repository import UserRepository
 
 router = Router(name="start")
 
@@ -16,7 +16,7 @@ router = Router(name="start")
 async def start_command(
     update: Update,
     context: Context,
-    user_repo: UserRepositoryDependency,
+    user_repo: UserRepository,
     effective_user: EffectiveUser,
 ) -> HandlerResponse:
     """
@@ -31,7 +31,7 @@ async def start_command(
     # Create or update user in database
     user = user_repo.create_or_update(
         telegram_id=effective_user.id,
-        full_name=effective_user.full_name,
+        full_name=effective_user.first_name,
         username=effective_user.username,
     )
 
