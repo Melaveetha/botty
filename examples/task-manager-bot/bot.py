@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Task Manager Bot - Example Botty Application
 

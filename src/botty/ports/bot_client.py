@@ -1,7 +1,7 @@
 from typing import Protocol
 
-from ..classes import Message
-from ..handlers import BaseAnswer
+from ..domain import Message
+from ..responses import BaseAnswer
 
 
 class TelegramBotClient(Protocol):

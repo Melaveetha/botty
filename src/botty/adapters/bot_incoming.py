@@ -1,13 +1,14 @@
 from telegram import Update as PTBUpdate
-from ..classes import (
-    Update,
-    EffectiveUser,
-    EffectiveChat,
-    EffectiveMessage,
+
+from ..domain import (
     CallbackQuery,
     EditedMessage,
+    EffectiveChat,
+    EffectiveMessage,
+    EffectiveUser,
     Poll,
     PollAnswer,
+    Update,
 )
 
 

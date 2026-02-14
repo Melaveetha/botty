@@ -1,45 +1,69 @@
-from .app import AppBuilder, Application
-from .classes import BaseRepository, BaseService, Update, Message
-from .context import Context
+"""
+Botty – A FastAPI-inspired framework for Telegram bots.
+
+Exposes the main public API.
+"""
+
+from .application import AppBuilder, Application
+from .context import Context, ContextProtocol
+from .di import Depends, HandlerResponse
 from .database import DatabaseProvider, SQLiteProvider
-from .exceptions import BottyError
-from .handlers import (
+from .domain import (
+    Poll,
+    PollAnswer,
+    Update,
+    BaseRepository,
+    BaseService,
+)
+from .helpers import (
+    CallbackQuery,
+    EditedMessage,
+    EffectiveChat,
+    EffectiveMessage,
+    EffectiveUser,
+)
+from .responses import (
     BaseAnswer,
     Answer,
+    AudioAnswer,
+    ContactAnswer,
+    DiceAnswer,
+    DocumentAnswer,
     EditAnswer,
     EmptyAnswer,
+    LocationAnswer,
     PhotoAnswer,
-    DocumentAnswer,
-    AudioAnswer,
+    PollAnswer as ResponsePollAnswer,  # renamed to avoid clash with domain PollAnswer
+    VenueAnswer,
     VideoAnswer,
     VoiceAnswer,
-    LocationAnswer,
-    VenueAnswer,
-    ContactAnswer,
-    PollAnswer,
-    DiceAnswer,
 )
-from .router import HandlerResponse, Router, Depends
-from .helpers import EffectiveChat, EffectiveUser, EffectiveMessage, CallbackQuery
+from .routing import Router
 
 __all__ = [
-    "Application",
+    # Application
     "AppBuilder",
-    "BaseRepository",
-    "BaseService",
+    "Application",
+    # Context
     "Context",
-    "DatabaseProvider",
-    "SQLiteProvider",
-    "BottyError",
-    "Router",
-    "HandlerResponse",
+    "ContextProtocol",
+    # DI
     "Depends",
+    "HandlerResponse",
+    # Domain entities
     "Update",
-    "Message",
-    "EffectiveChat",
     "EffectiveUser",
+    "EffectiveChat",
     "EffectiveMessage",
     "CallbackQuery",
+    "EditedMessage",
+    "Poll",
+    "PollAnswer",
+    # Domain repositories
+    "BaseRepository",
+    # Domain services
+    "BaseService",
+    # Responses
     "BaseAnswer",
     "Answer",
     "EditAnswer",
@@ -52,6 +76,11 @@ __all__ = [
     "LocationAnswer",
     "VenueAnswer",
     "ContactAnswer",
-    "PollAnswer",
+    "ResponsePollAnswer",  # if needed
     "DiceAnswer",
+    # Routing
+    "Router",
+    # Database
+    "DatabaseProvider",
+    "SQLiteProvider",
 ]

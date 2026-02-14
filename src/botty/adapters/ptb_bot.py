@@ -1,25 +1,26 @@
 from loguru import logger
-from telegram import Bot, Message as TGMessage
+from telegram import Bot
+from telegram import Message as TGMessage
 
-from ..classes import Message
+from ..domain import Message
 from ..exceptions import BottyError
-from ..handlers import (
+from ..ports import TelegramBotClient
+from ..responses import (
     Answer,
-    EditAnswer,
     AudioAnswer,
     BaseAnswer,
     ContactAnswer,
     DiceAnswer,
     DocumentAnswer,
+    EditAnswer,
     EmptyAnswer,
     LocationAnswer,
     PhotoAnswer,
     PollAnswer,
     VenueAnswer,
-    VoiceAnswer,
     VideoAnswer,
+    VoiceAnswer,
 )
-from ..ports import TelegramBotClient
 
 
 class PTBBotAdapter(TelegramBotClient):
