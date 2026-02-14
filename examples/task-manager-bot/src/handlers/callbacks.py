@@ -1,7 +1,16 @@
-from botty import Router, Context, Answer, EditAnswer, HandlerResponse, Update
+from botty import (
+    Router,
+    Context,
+    Answer,
+    EditAnswer,
+    HandlerResponse,
+    Update,
+    InjectableCallbackQuery,
+    InjectableUser,
+)
 
-from src.repositories.task_repository import TaskRepositoryDependency
-from src.repositories.user_repository import UserRepositoryDependency
+from src.repositories.task_repository import TaskRepository
+from src.repositories.user_repository import UserRepository
 
 router = Router(name="callbacks")
 
@@ -10,8 +19,10 @@ router = Router(name="callbacks")
 async def task_done_callback(
     update: Update,
     context: Context,
-    user_repo: UserRepositoryDependency,
-    task_repo: TaskRepositoryDependency,
+    user_repo: UserRepository,
+    task_repo: TaskRepository,
+    query: InjectableCallbackQuery,
+    effective_user: InjectableUser,
 ) -> HandlerResponse:
     """
     Handle callback when user clicks 'Mark Done' button.
@@ -22,11 +33,10 @@ async def task_done_callback(
         user_repo: Injected user repository
         task_repo: Injected task repository
     """
-    query = update.callback_query
     await query.answer()
 
     # Get user
-    user = user_repo.get_by_telegram_id(update.effective_user.id)
+    user = user_repo.get_by_telegram_id(effective_user.id)
     if not user:
         yield Answer(text="❌ User not found.")
         return
@@ -57,8 +67,10 @@ async def task_done_callback(
 async def task_delete_callback(
     update: Update,
     context: Context,
-    user_repo: UserRepositoryDependency,
-    task_repo: TaskRepositoryDependency,
+    user_repo: UserRepository,
+    task_repo: TaskRepository,
+    query: InjectableCallbackQuery,
+    effective_user: InjectableUser,
 ) -> HandlerResponse:
     """
     Handle callback when user clicks 'Delete' button.
@@ -69,11 +81,10 @@ async def task_delete_callback(
         user_repo: Injected user repository
         task_repo: Injected task repository
     """
-    query = update.callback_query
     await query.answer()
 
     # Get user
-    user = user_repo.get_by_telegram_id(update.effective_user.id)
+    user = user_repo.get_by_telegram_id(effective_user.id)
     if not user:
         yield Answer(text="❌ User not found.")
         return
@@ -100,8 +111,10 @@ async def task_delete_callback(
 async def refresh_list_callback(
     update: Update,
     context: Context,
-    user_repo: UserRepositoryDependency,
-    task_repo: TaskRepositoryDependency,
+    user_repo: UserRepository,
+    task_repo: TaskRepository,
+    query: InjectableCallbackQuery,
+    effective_user: InjectableUser,
 ) -> HandlerResponse:
     """
     Handle callback to refresh task list.
@@ -112,11 +125,10 @@ async def refresh_list_callback(
         user_repo: Injected user repository
         task_repo: Injected task repository
     """
-    query = update.callback_query
-    await query.answer("Refreshing...")
+    yield Answer("Refreshing...")
 
     # Get user
-    user = user_repo.get_by_telegram_id(update.effective_user.id)
+    user = user_repo.get_by_telegram_id(effective_user.id)
     if user is None:
         yield Answer(text="❌ User not found.")
         return

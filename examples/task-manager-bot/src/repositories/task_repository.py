@@ -1,10 +1,8 @@
-from botty import BaseRepository, Context, Depends
+from botty import BaseRepository
 
 from datetime import datetime
-from typing import Annotated, Optional, TypeAlias
 
 from sqlmodel import Session, select
-from telegram import Update
 
 from src.models.task import Task
 
@@ -18,7 +16,7 @@ class TaskRepository(BaseRepository):
         super().__init__(session)
 
     def get_user_tasks(
-        self, user_id: int, completed: Optional[bool] = None, limit: int = 100
+        self, user_id: int, completed: bool | None = None, limit: int = 100
     ) -> list[Task]:
         """
         Get all tasks for a user.
@@ -69,10 +67,10 @@ class TaskRepository(BaseRepository):
         self,
         user_id: int,
         title: str,
-        description: Optional[str] = None,
+        description: str | None = None,
         priority: str = "medium",
-        tags: Optional[str] = None,
-        due_date: Optional[datetime] = None,
+        tags: str | None = None,
+        due_date: datetime | None = None,
     ) -> Task:
         """
         Create a new task.
@@ -97,13 +95,10 @@ class TaskRepository(BaseRepository):
             due_date=due_date,
         )
 
-        self.session.add(task)
-        self.session.commit()
-        self.session.refresh(task)
-
+        task = self.create(task)
         return task
 
-    def mark_complete(self, task_id: int, completed: bool = True) -> Optional[Task]:
+    def mark_complete(self, task_id: int, completed: bool = True) -> Task | None:
         """
         Mark task as complete or incomplete.
 
@@ -119,9 +114,8 @@ class TaskRepository(BaseRepository):
         if task:
             task.completed = completed
             task.completed_at = datetime.utcnow() if completed else None
-            self.session.commit()
-            self.session.refresh(task)
 
+            self.update(task)
         return task
 
     def search_tasks(self, user_id: int, keyword: str) -> list[Task]:
@@ -215,10 +209,3 @@ class TaskRepository(BaseRepository):
             if all_tasks
             else 0,
         }
-
-
-async def task_repo(update: Update, context: Context, session: Session):
-    return TaskRepository(session)
-
-
-TaskRepositoryDependency: TypeAlias = Annotated[TaskRepository, Depends(task_repo)]

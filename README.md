@@ -7,7 +7,7 @@ Write clean, code with automatic dependency resolution and a developer-friendly 
 
 
 ```python
-from botty import Router, HandlerResponse, Context, Answer, Update
+from botty import Router, HandlerResponse, Context, Answer, Update, InjectableUser
 
 router = Router()
 
@@ -15,9 +15,10 @@ router = Router()
 async def start_handler(
     update: Update,
     context: Context,
-    user_repo: UserRepository  # Auto-injected!
+    user_repo: UserRepository,  # Auto-injected!
+    effective_user: InjectableUser # Auto-injected!
 ) -> HandlerResponse:
-    user = user_repo.get_or_create(update.effective_user.id)
+    user = user_repo.get_or_create(effective_user.id)
     yield Answer(text=f"Welcome back, {user.name}! 👋")
 ```
 
@@ -50,29 +51,52 @@ uv add botty-framework
 
 ### FastAPI-Style Dependency Injection
 
+Botty automatically injects *repositories* and *services* just by type‑hinting them – no decorators, no `Depends()` boilerplate.
+
 ```python
-async def get_repository(update: Update, context: Context, session: Session): # ← Session handled automatically
-    return UserRepository(session)
-
-async def get_settings(update: Update, context: Context): # Database session NOT created here
-    return SettingsService()
-
-UserRepositoryDep = Annotated[UserRepository, Depends(get_repository)]
-SettingsServiceDep = Annotated[SettingsService, Depends(get_settings)]
-
 @router.command("profile")
 async def show_profile(
     update: Update,
     context: Context,
-    user_repo: UserRepositoryDep,      # Injected automatically
-    settings_svc: SettingsServiceDep   # Services too!
+    user_repo: UserRepository,      # Injected automatically
+    settings_svc: SettingsService,   # Services too!
+    effective_user: InjectableUser
 ) -> HandlerResponse:
-    user = user_repo.get(update.effective_user.id)
+    user = user_repo.get(effective_user.id)
     settings = settings_svc.get_user_settings(user.id)
 
     yield Answer(f"👤 {user.name}\n⚙️ Theme: {settings.theme}")
 ```
 
+What dependencies are generated?
+1. Any class that inherits from BaseRepository gets a request‑scoped instance with an open database session.
+2. Any class that inherits from BaseService is a singleton – shared across requests.
+3. Common objects like `Update`, `Context`, `Session`, `InjectableUser`, `InjectableChat`, `InjectableMessage`, and `CallbackQuery` are also injected automatically.
+
+### Custom dependencies with `Depends`
+
+For cases where automatic injection isn't enough (e.g., you need to compute a value or fetch something conditionally), Botty provides FastAPI‑style Depends.
+
+```python
+from botty import Depends, Annotated
+
+async def get_current_user(
+    update: Update,
+    user_repo: UserRepository   # ← Nested dependencies work too!
+) -> User:
+    return user_repo.get(update.effective_user.id)
+
+CurrentUser = Annotated[User, Depends(get_current_user)]
+
+@router.command("profile")
+async def profile_handler(
+    update: Update,
+    context: Context,
+    current_user: CurrentUser   # ← Injected via Depends
+) -> HandlerResponse:
+    yield Answer(f"Your profile: {current_user.name}")
+```
+Dependencies can be cached within the same request (default) or recomputed each time. They can also depend on other dependencies – the resolver handles the graph automatically.
 
 ### Message Registry & Smart Editing
 
@@ -133,7 +157,7 @@ Built-in support for the repository pattern with SQLModel:
 from botty import BaseRepository
 from sqlmodel import Session, select
 
-class UserRepository(BaseRepository[User]):
+class UserRepository(BaseRepository[User]): # Inheritance from BaseRepository allows to be injected
     model = User
 
     def get_by_telegram_id(self, telegram_id: int) -> User | None:
@@ -144,9 +168,6 @@ class UserRepository(BaseRepository[User]):
         statement = select(User).where(User.is_active == True)
         return list(self.session.exec(statement).all())
 
-
-UserRepositoryDep = Annotated[UserRepository, Depends(get_repository)]
-
 # Automatically injected with proper session management!
 @router.command("stats")
 async def stats_handler(
@@ -155,7 +176,7 @@ async def stats_handler(
     user_repo: UserRepositoryDep
 ) -> HandlerResponse:
     active = user_repo.get_active_users()
-    yield answer(f"📊 Active users: {len(active)}")
+    yield Answer(f"📊 Active users: {len(active)}")
 ```
 
 
@@ -172,7 +193,7 @@ def wrong_handler(update: Update, context: Context):  # ❌ Forgot 'async'
 # 💡 Suggestion: Change 'def wrong_handler(...)' to 'async def wrong_handler(...)'
 ```
 
-### Built-in Database Support
+### Built-in Database Support (optional)
 
 SQLModel integration with automatic session management:
 
@@ -275,7 +296,7 @@ class Todo(SQLModel, table=True):
 # Repositories
 # ============================================================================
 
-class TodoRepository(BaseRepository[Todo]):
+class TodoRepository(BaseRepository[Todo]):  # Inheritance from BaseRepository allows to be injected
     model = Todo
 
     def get_by_user(self, user_id: int) -> list[Todo]:
@@ -300,11 +321,6 @@ class TodoRepository(BaseRepository[Todo]):
             self.update(todo)
         return todo
 
-def get_todo_repo(update: Update, context: Context, session: Session):
-    return TodoRepository(session)
-
-TodoRepositoryDep = Annotated[TodoRepository, Depends(get_todo_repo)]
-
 # ============================================================================
 # Handlers
 # ============================================================================
@@ -317,7 +333,7 @@ async def start_handler(
     context: Context
 ) -> HandlerResponse:
     """Welcome message."""
-    yield answer(
+    yield Answer(
         "👋 Welcome to Todo Bot!\n\n"
         "Commands:\n"
         "/add <task> - Add a new todo\n"
@@ -330,34 +346,36 @@ async def start_handler(
 async def add_todo_handler(
     update: Update,
     context: Context,
-    todo_repo: TodoRepositoryDep  # Auto-injected!
+    todo_repo: TodoRepository,  # Auto-injected!
+    effective_user: InjectableUser
 ) -> HandlerResponse:
     """Add a new todo."""
     if not context.args:
-        yield answer("❌ Usage: /add <task description>")
+        yield Answer("❌ Usage: /add <task description>")
         return
 
     task = " ".join(context.args)
     todo = Todo(
-        user_id=update.effective_user.id,
+        user_id=effective_user.id,
         task=task
     )
 
     todo_repo.create(todo)
-    yield answer(f"✅ Added: {task}")
+    yield Answer(f"✅ Added: {task}")
 
 
 @router.command("list")
 async def list_todos_handler(
     update: Update,
     context: Context,
-    todo_repo: TodoRepositoryDep  # Auto-injected!
+    todo_repo: TodoRepositoryDep,  # Auto-injected!
+    effective_user: InjectableUser
 ) -> HandlerResponse:
     """List all todos."""
-    todos = todo_repo.get_by_user(update.effective_user.id)
+    todos = todo_repo.get_by_user(effective_user.id)
 
     if not todos:
-        yield answer("📝 You have no todos!\nUse /add to create one.")
+        yield Answer("📝 You have no todos!\nUse /add to create one.")
         return
 
     # Build message with buttons
@@ -378,7 +396,7 @@ async def list_todos_handler(
 
     keyboard = InlineKeyboardMarkup(buttons)
 
-    yield answer(
+    yield Answer(
         text=text,
         reply_markup=keyboard,
         message_key="todo_list"
@@ -389,30 +407,32 @@ async def list_todos_handler(
 async def pending_todos_handler(
     update: Update,
     context: Context,
-    todo_repo: TodoRepositoryDep  # Auto-injected!
+    todo_repo: TodoRepositoryDep,  # Auto-injected!
+    effective_user: InjectableUser
 ) -> HandlerResponse:
     """List incomplete todos."""
-    todos = todo_repo.get_pending(update.effective_user.id)
+    todos = todo_repo.get_pending(effective_user.id)
 
     if not todos:
-        yield answer("🎉 All done! No pending todos.")
+        yield Answer("🎉 All done! No pending todos.")
         return
 
     text = "⏺️ Pending todos:\n\n"
     for i, todo in enumerate(todos, 1):
         text += f"{i}. {todo.task}\n"
 
-    yield answer(text)
+    yield Answer(text)
 
 
 @router.callback_query(r"^toggle_(\d+)")
 async def toggle_todo_handler(
     update: Update,
     context: Context,
-    todo_repo: TodoRepositoryDep  # Auto-injected!
+    todo_repo: TodoRepositoryDep,  # Auto-injected!
+    callback_query: CallbackQuery,
+    effective_user: InjectableUser
 ) -> HandlerResponse:
     """Toggle todo completion."""
-    query = update.callback_query
     await query.answer()
 
     # Extract todo ID from callback data
@@ -422,11 +442,11 @@ async def toggle_todo_handler(
     todo = todo_repo.toggle_complete(todo_id)
 
     if not todo:
-        yield edit_answer("❌ Todo not found")
+        yield EditAnswer("❌ Todo not found")
         return
 
     # Refresh the list
-    todos = todo_repo.get_by_user(update.effective_user.id)
+    todos = todo_repo.get_by_user(effective_user.id)
 
     text = "📝 Your todos:\n\n"
     buttons = []
@@ -445,7 +465,7 @@ async def toggle_todo_handler(
 
     keyboard = InlineKeyboardMarkup(buttons)
 
-    yield edit_answer(
+    yield EditAnswer(
         text=text,
         reply_markup=keyboard,
         message_key="todo_list"
@@ -477,8 +497,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     session = Session(engine)
     try:
         user_repo = UserRepository(session)
-        user = user_repo.get(update.effective_user.id)
-        await update.message.reply_text(f"Hello {user.name}")
+        user_name = "unknown"
+        if update.effective_user is not None:
+            user = user_repo.get(update.effective_user.id)
+            user_name = user.name
+        if update.message is not None:
+            await update.message.reply_text(f"Hello {user_name}")
     finally:
         session.close()
 
@@ -491,9 +515,10 @@ application.add_handler(CommandHandler("start", start))
 async def start_handler(
     update: Update,
     context: Context,
-    user_repo: UserRepositoryDep  # Auto-injected!
+    user_repo: UserRepository,  # Auto-injected!
+    effective_user: InjectableUser
 ) -> HandlerResponse:
-    user = user_repo.get(update.effective_user.id)
+    user = user_repo.get(effective_user.id)
     yield Answer(f"Hello {user.name}")
     # Session managed automatically
 ```
@@ -510,7 +535,7 @@ MIT License - see LICENSE file for details
 
 ## 🗺️ Roadmap
 
-- [ ] More database providers (PostgreSQL, MySQL)
+- [ ] More database providers (PostgreSQL, MySQL, NoDatabase)
 - [ ] Conversation state management
 - [ ] Admin panel
 - [ ] CLI for scaffolding projects

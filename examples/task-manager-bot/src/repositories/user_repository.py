@@ -1,10 +1,8 @@
-from botty import BaseRepository, Context, Depends
+from botty import BaseRepository
 
 from datetime import datetime, timedelta
-from typing import Annotated, Optional, TypeAlias
 
 from sqlmodel import Session, select
-from telegram import Update
 
 from src.models.user import User
 
@@ -17,7 +15,7 @@ class UserRepository(BaseRepository):
     def __init__(self, session: Session):
         super().__init__(session)
 
-    def get_by_telegram_id(self, telegram_id: int) -> Optional[User]:
+    def get_by_telegram_id(self, telegram_id: int) -> User | None:
         """
         Get user by Telegram ID.
 
@@ -31,7 +29,7 @@ class UserRepository(BaseRepository):
         return self.session.exec(statement).first()
 
     def create_or_update(
-        self, telegram_id: int, full_name: str, username: Optional[str] = None
+        self, telegram_id: int, full_name: str, username: str | None = None
     ) -> User:
         """
         Create a new user or update existing user.
@@ -51,13 +49,11 @@ class UserRepository(BaseRepository):
             user.full_name = full_name
             user.username = username
             user.last_active = datetime.utcnow()
+            self.update(user)
         else:
             # Create new user
             user = User(telegram_id=telegram_id, full_name=full_name, username=username)
-            self.session.add(user)
-
-        self.session.commit()
-        self.session.refresh(user)
+            self.create(user)
         return user
 
     def update_last_active(self, user_id: int) -> None:
@@ -70,7 +66,7 @@ class UserRepository(BaseRepository):
         user = self.get(user_id)
         if user:
             user.last_active = datetime.utcnow()
-            self.session.commit()
+            self.update(user)
 
     def get_all_active_users(self, days: int = 7) -> list[User]:
         """
@@ -85,10 +81,3 @@ class UserRepository(BaseRepository):
         cutoff = datetime.utcnow() - timedelta(days=days)
         statement = select(User).where(User.last_active >= cutoff)
         return list(self.session.exec(statement).all())
-
-
-async def user_repo(update: Update, context: Context, session: Session):
-    return UserRepository(session)
-
-
-UserRepositoryDependency: TypeAlias = Annotated[UserRepository, Depends(user_repo)]

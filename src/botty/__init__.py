@@ -1,36 +1,103 @@
-from telegram import Message, Update
+"""
+Botty – A FastAPI-inspired framework for Telegram bots.
 
-from .app import AppBuilder, Application
-from .classes import BaseRepository, BaseService
-from .context import Context
+Exposes the main public API.
+"""
+
+from .application import AppBuilder, Application
+from .context import Context, ContextProtocol
+from .di import Depends, HandlerResponse
 from .database import DatabaseProvider, SQLiteProvider
-from .exceptions import BottyError
-from .router import (
-    Answer,
+from .domain import (
+    Update,
+    Message,
+    EffectiveUser,
+    EffectiveChat,
+    EffectiveMessage,
+    CallbackQuery,
+    EditedMessage,
+    Poll,
+    PollAnswer,
+    BaseRepository,
+    BaseService,
+)
+from .helpers import (
+    InjectableCallbackQuery,
+    InjectableEditedMessage,
+    InjectableChat,
+    InjectableMessage,
+    InjectableUser,
+    InjectablePoll,
+    InjectablePollAnswer,
+)
+from .responses import (
     BaseAnswer,
-    Depends,
+    Answer,
+    AudioAnswer,
+    ContactAnswer,
+    DiceAnswer,
+    DocumentAnswer,
     EditAnswer,
     EmptyAnswer,
-    HandlerResponse,
-    Router,
+    LocationAnswer,
+    PhotoAnswer,
+    PollAnswer as ResponsePollAnswer,  # renamed to avoid clash with domain PollAnswer
+    VenueAnswer,
+    VideoAnswer,
+    VoiceAnswer,
 )
+from .routing import Router
 
 __all__ = [
-    "Application",
+    # Application
     "AppBuilder",
-    "BaseRepository",
-    "BaseService",
+    "Application",
+    # Context
     "Context",
-    "DatabaseProvider",
-    "SQLiteProvider",
-    "BottyError",
-    "Router",
+    "ContextProtocol",
+    # DI
+    "Depends",
+    "HandlerResponse",
+    # Domain entities
+    "Update",
+    "Message",
+    "EffectiveUser",
+    "EffectiveChat",
+    "EffectiveMessage",
+    "CallbackQuery",
+    "EditedMessage",
+    "Poll",
+    "PollAnswer",
+    # Helpers
+    "InjectableCallbackQuery",
+    "InjectableEditedMessage",
+    "InjectableChat",
+    "InjectableMessage",
+    "InjectableUser",
+    "InjectablePoll",
+    "InjectablePollAnswer",
+    # Domain repositories
+    "BaseRepository",
+    # Domain services
+    "BaseService",
+    # Responses
     "BaseAnswer",
     "Answer",
     "EditAnswer",
     "EmptyAnswer",
-    "HandlerResponse",
-    "Depends",
-    "Update",
-    "Message",
+    "PhotoAnswer",
+    "DocumentAnswer",
+    "AudioAnswer",
+    "VideoAnswer",
+    "VoiceAnswer",
+    "LocationAnswer",
+    "VenueAnswer",
+    "ContactAnswer",
+    "ResponsePollAnswer",  # if needed
+    "DiceAnswer",
+    # Routing
+    "Router",
+    # Database
+    "DatabaseProvider",
+    "SQLiteProvider",
 ]
