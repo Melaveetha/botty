@@ -135,6 +135,7 @@ class TestBaseRepository:
             repo2 = UserRepository(new_session)
             detached_user = UserModel(id=user_id, name="Eve Updated", telegram_id=101)
             updated = repo2.update(detached_user)
+            repo2.commit()
             assert updated.name == "Eve Updated"
 
         # Verify with fresh session
@@ -180,7 +181,7 @@ class TestBaseRepository:
     def test_create_raises_repository_operation_error(self, repo):
         """Simulate a database error during create()."""
         user = UserModel(name="Test", telegram_id=999)
-        with patch.object(repo.session, "commit", side_effect=Exception("DB error")):
+        with patch.object(repo.session, "flush", side_effect=Exception("DB error")):
             with pytest.raises(RepositoryOperationError) as exc:
                 repo.create(user)
             assert "create" in str(exc.value)
@@ -193,7 +194,7 @@ class TestBaseRepository:
         session.commit()
         session.refresh(user)
 
-        with patch.object(repo.session, "commit", side_effect=Exception("DB error")):
+        with patch.object(repo.session, "flush", side_effect=Exception("DB error")):
             with pytest.raises(RepositoryOperationError) as exc:
                 repo.update(user)
             assert "update" in str(exc.value)

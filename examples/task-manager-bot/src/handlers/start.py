@@ -1,11 +1,4 @@
-from botty import (
-    Router,
-    Context,
-    Answer,
-    HandlerResponse,
-    Update,
-    EffectiveUser,
-)
+from botty import Router, Context, Answer, HandlerResponse, Update, InjectableUser
 
 from src.repositories.user_repository import UserRepository
 
@@ -17,7 +10,7 @@ async def start_command(
     update: Update,
     context: Context,
     user_repo: UserRepository,
-    effective_user: EffectiveUser,
+    effective_user: InjectableUser,
 ) -> HandlerResponse:
     """
     Handle /start command - register user and show welcome message.

@@ -10,6 +10,15 @@ if TYPE_CHECKING:
 
 
 class BotData:
+    """Bot-wide data stored in PTB's bot_data.
+
+    Attributes:
+        message_registry: Registry for tracking sent messages.
+        dependency_container: Container for dependency injection.
+        database_provider: Optional database provider instance.
+        bot_client: Client for sending/editing messages (adapter).
+    """
+
     message_registry: "MessageRegistry"
     dependency_container: "DependencyContainer"
     database_provider: "DatabaseProvider | None"
@@ -17,10 +26,10 @@ class BotData:
 
     def __init__(self):
         # TODO: add error when not properly initialized
-        self.message_registry = None  # ty: ignore [invalid-assignment]
-        self.dependency_container = None  # ty: ignore [invalid-assignment]
+        self.message_registry = None  # type: ignore [invalid-assignment]
+        self.dependency_container = None  # type: ignore [invalid-assignment]
         self.database_provider = None
-        self.bot_client = None  # ty: ignore [invalid-assignment]
+        self.bot_client = None  # type: ignore [invalid-assignment]
 
 
 class UserData:
@@ -34,7 +43,11 @@ class ChatData:
 
 
 class ContextProtocol(Protocol):
-    """The minimal context interface Botty requires."""
+    """Minimal protocol defining the context interface required by botty.
+
+    Used for type hints to avoid tight coupling with the concrete Context
+    class.
+    """
 
     @property
     def bot_data(self) -> BotData: ...
@@ -47,6 +60,12 @@ class ContextProtocol(Protocol):
 
 
 class Context(CallbackContext[ExtBot, UserData, ChatData, BotData]):
+    """Custom context class for botty handlers.
+
+    Inherits from PTB's CallbackContext and provides access to bot_data,
+    user_data, chat_data, and command arguments.
+    """
+
     def __init__(
         self,
         application: TgApplication,

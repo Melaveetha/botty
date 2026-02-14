@@ -6,6 +6,23 @@ from telegram.constants import ParseMode
 
 @dataclass
 class BaseAnswer:
+    """Base class for all bot responses.
+
+    All concrete response types inherit from this class. It contains common
+    fields like text, parse_mode, reply_markup, and metadata for message
+    tracking.
+
+    Attributes:
+        text: The main text content of the response.
+        parse_mode: HTML or Markdown formatting (default HTML).
+        reply_markup: Inline keyboard or reply markup.
+        disable_notification: If True, sends the message silently.
+        protect_content: If True, prevents forwarding and saving.
+        message_key: Optional key for later retrieval via MessageRegistry.
+        metadata: Arbitrary additional data to store with the message.
+        handler_name: Override the handler name used for registry tracking.
+    """
+
     text: str
     parse_mode: str | None = field(default=ParseMode.HTML, kw_only=True)
     reply_markup: ReplyKeyboardMarkup | None = field(default=None, kw_only=True)

@@ -21,9 +21,34 @@ from .validation import validate_handler
 
 
 class Router:
-    """Router with FastAPI-like dependency injection."""
+    """Router that collects handlers and converts them to PTB handlers.
+
+    Provides decorators for common update types (command, callback_query,
+    message, inline_query, prefix) with automatic dependency injection
+    and response processing.
+
+    Example:
+        ```python
+        router = Router()
+
+        @router.command("start")
+        async def start(update: Update, context: Context) -> HandlerResponse:
+            yield Answer("Hello!")
+
+        @router.callback_query("^data")
+        async def handle_callback(update: Update, context: Context,
+                                   callback_query: CallbackQuery) -> HandlerResponse:
+            await callback_query.answer()
+            yield Answer("Callback handled")
+        ```
+    """
 
     def __init__(self, name: str | None = None):
+        """Create a new router.
+
+        Args:
+            name: Optional name for the router (used in logs).
+        """
         self.name = name or "router"
         self.handlers = []
         self.incoming_adapter = PTBIncomingAdapter()
@@ -32,16 +57,24 @@ class Router:
     async def request_scope(
         self, update: Update, context: ContextProtocol
     ) -> AsyncIterator[RequestScope]:
-        """Create a request scope (for database sessions)."""
+        """Create a request scope for the duration of handler execution.
+
+        Yields a scope that manages the database session and dependency cache.
+        The session is automatically committed on success and closed afterwards.
+        """
         scope = RequestScope(update, context)
         try:
             yield scope
+            scope.commit()
         finally:
             scope.close()
 
     async def _wrap_function(
         self, func: Handler, tg_update: TGUpdate, context: ContextProtocol
     ):
+        """Internal wrapper that resolves dependencies, executes the handler,
+        and processes its responses.
+        """
         handler_name: str = func.__name__
         resolver = DependencyResolver(context.bot_data.dependency_container)
         processor = ResponseProcessor(

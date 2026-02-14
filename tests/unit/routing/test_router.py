@@ -15,10 +15,7 @@ from telegram.ext import (
 
 from botty import Answer, BaseAnswer, Context, Depends, EditAnswer, Update
 from botty.di import RequestScope
-from botty.exceptions import (
-    DatabaseNotConfiguredError,
-    DependencyResolutionError,
-)
+from botty.exceptions import DependencyResolutionError
 from botty.responses import EmptyAnswer
 from botty.testing import (
     TestBotClient,
@@ -413,7 +410,7 @@ class TestErrorHandling:
             yield Answer(text="test")
 
         wrapper = router.handlers[0][2]
-        with pytest.raises(DatabaseNotConfiguredError) as exc:
+        with pytest.raises(DependencyResolutionError) as exc:
             await wrapper(ptb_update, ctx)
         assert "no database provider configured" in str(exc.value)
         assert "handler 'needs_db_handler'" in str(exc.value)

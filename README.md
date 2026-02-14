@@ -7,7 +7,7 @@ Write clean, code with automatic dependency resolution and a developer-friendly 
 
 
 ```python
-from botty import Router, HandlerResponse, Context, Answer, Update, EffectiveUser
+from botty import Router, HandlerResponse, Context, Answer, Update, InjectableUser
 
 router = Router()
 
@@ -16,7 +16,7 @@ async def start_handler(
     update: Update,
     context: Context,
     user_repo: UserRepository,  # Auto-injected!
-    effective_user: EffectiveUser # Auto-injected!
+    effective_user: InjectableUser # Auto-injected!
 ) -> HandlerResponse:
     user = user_repo.get_or_create(effective_user.id)
     yield Answer(text=f"Welcome back, {user.name}! 👋")
@@ -60,7 +60,7 @@ async def show_profile(
     context: Context,
     user_repo: UserRepository,      # Injected automatically
     settings_svc: SettingsService,   # Services too!
-    effective_user: EffectiveUser
+    effective_user: InjectableUser
 ) -> HandlerResponse:
     user = user_repo.get(effective_user.id)
     settings = settings_svc.get_user_settings(user.id)
@@ -71,7 +71,7 @@ async def show_profile(
 What dependencies are generated?
 1. Any class that inherits from BaseRepository gets a request‑scoped instance with an open database session.
 2. Any class that inherits from BaseService is a singleton – shared across requests.
-3. Common objects like `Update`, `Context`, `Session`, `EffectiveUser`, `EffectiveChat`, `EffectiveMessage`, and `CallbackQuery` are also injected automatically.
+3. Common objects like `Update`, `Context`, `Session`, `InjectableUser`, `InjectableChat`, `InjectableMessage`, and `CallbackQuery` are also injected automatically.
 
 ### Custom dependencies with `Depends`
 
@@ -346,8 +346,8 @@ async def start_handler(
 async def add_todo_handler(
     update: Update,
     context: Context,
-    todo_repo: TodoRepositoryDep,  # Auto-injected!
-    effective_user: EffectiveUser
+    todo_repo: TodoRepository,  # Auto-injected!
+    effective_user: InjectableUser
 ) -> HandlerResponse:
     """Add a new todo."""
     if not context.args:
@@ -369,7 +369,7 @@ async def list_todos_handler(
     update: Update,
     context: Context,
     todo_repo: TodoRepositoryDep,  # Auto-injected!
-    effective_user: EffectiveUser
+    effective_user: InjectableUser
 ) -> HandlerResponse:
     """List all todos."""
     todos = todo_repo.get_by_user(effective_user.id)
@@ -408,7 +408,7 @@ async def pending_todos_handler(
     update: Update,
     context: Context,
     todo_repo: TodoRepositoryDep,  # Auto-injected!
-    effective_user: EffectiveUser
+    effective_user: InjectableUser
 ) -> HandlerResponse:
     """List incomplete todos."""
     todos = todo_repo.get_pending(effective_user.id)
@@ -430,7 +430,7 @@ async def toggle_todo_handler(
     context: Context,
     todo_repo: TodoRepositoryDep,  # Auto-injected!
     callback_query: CallbackQuery,
-    effective_user: EffectiveUser
+    effective_user: InjectableUser
 ) -> HandlerResponse:
     """Toggle todo completion."""
     await query.answer()
@@ -516,7 +516,7 @@ async def start_handler(
     update: Update,
     context: Context,
     user_repo: UserRepository,  # Auto-injected!
-    effective_user: EffectiveUser
+    effective_user: InjectableUser
 ) -> HandlerResponse:
     user = user_repo.get(effective_user.id)
     yield Answer(f"Hello {user.name}")

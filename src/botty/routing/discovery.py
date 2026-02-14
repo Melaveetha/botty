@@ -12,6 +12,11 @@ from .router import Router
 
 
 class ModuleSystem(ABC):
+    """Abstract interface for filesystem and import operations.
+
+    Used to make router discovery testable by allowing fake implementations.
+    """
+
     @abstractmethod
     def add_to_sys_path(self, path: Path) -> None: ...
 
@@ -52,6 +57,25 @@ def discover_routers(
     project_root: Path | None = None,
     module_system: ModuleSystem | None = None,
 ) -> list[Router]:
+    """Discover and import all Router instances from handler modules.
+
+    Searches for Python files (excluding __init__.py) in the given directory,
+    imports them, and collects any Router objects found.
+
+    Args:
+        path: Directory to search for handlers. If None, uses "src/handlers"
+              relative to project root.
+        project_root: Root of the project (where pyproject.toml, setup.py, or
+                      .git is located). If None, auto-detected.
+        module_system: For testing; real system used if omitted.
+
+    Returns:
+        List of Router instances found.
+
+    Raises:
+        HandlerDiscoveryError: If the handlers directory does not exist,
+                               is not a package, or import fails.
+    """
 
     module_system = module_system or RealModuleSystem()
 

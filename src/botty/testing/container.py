@@ -15,8 +15,10 @@ class TestDependencyContainer(DependencyContainer):
     def override(self, cls: Dependency, instance: Any):
         self._overrides[cls] = instance
 
-    async def resolve_dependency(self, dep: Depends, scope: RequestScope) -> Any:
+    async def resolve_dependency(
+        self, dep: Depends, scope: RequestScope, dependency_chain: list[str]
+    ) -> Any:
         # Give precedence to overrides
         if dep.dependency in self._overrides:
             return self._overrides[dep.dependency]
-        return await super().resolve_dependency(dep, scope)
+        return await super().resolve_dependency(dep, scope, dependency_chain)

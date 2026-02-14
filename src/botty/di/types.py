@@ -7,14 +7,19 @@ from ..responses import BaseAnswer
 
 # Type alias for the handler return type
 HandlerResponse: TypeAlias = AsyncGenerator[BaseAnswer, None]
+"""Type alias for the return type of a handler.
+
+Handlers must be async generators that yield BaseAnswer objects (or subclasses).
+"""
 
 
 @runtime_checkable
 class HandlerProtocol(Protocol):
-    """
-    Protocol for handler functions.
+    """Protocol defining the signature of a valid handler.
 
-    Handlers must be async generators that yield Answer objects.
+    Handlers must be async generators that accept at least two positional
+    arguments (update and context) and may accept additional injected
+    dependencies via keyword arguments.
 
     Example:
         ```python
@@ -22,7 +27,7 @@ class HandlerProtocol(Protocol):
             update: Update,
             context: ContextProtocol,
             user_repo: UserRepository,
-            effective_user: EffectiveUser
+            effective_user: InjectableUser
         ) -> HandlerResponse:
             # Do some work
             user = user_repo.get(effective_user.id)

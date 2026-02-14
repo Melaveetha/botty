@@ -95,7 +95,8 @@ class TaskRepository(BaseRepository):
             due_date=due_date,
         )
 
-        return self.create(task)
+        task = self.create(task)
+        return task
 
     def mark_complete(self, task_id: int, completed: bool = True) -> Task | None:
         """
@@ -115,7 +116,6 @@ class TaskRepository(BaseRepository):
             task.completed_at = datetime.utcnow() if completed else None
 
             self.update(task)
-
         return task
 
     def search_tasks(self, user_id: int, keyword: str) -> list[Task]:

@@ -13,6 +13,15 @@ from .utils import _extract_depends
 
 
 class DependencyContainer:
+    """Container for managing and resolving dependencies.
+
+    Holds singleton instances and provides methods to resolve dependencies
+    with support for caching and nested dependencies.
+
+    The container works together with RequestScope to provide request-scoped
+    caching and session injection.
+    """
+
     _BASIC_DEPENDENCIES = {
         Update: lambda scope: scope.update,
         Context: lambda scope: scope.context,
@@ -24,10 +33,31 @@ class DependencyContainer:
         self._singletons: dict[Dependency, Any] = {}
 
     def reset(self):
+        """Clear all cached singleton instances.
+
+        Useful for testing to ensure a clean state.
+        """
         self._singletons = dict()
 
-    async def resolve_dependency(self, dep: Depends, scope: RequestScope) -> Any:
-        """Resolve a single dependency."""
+    async def resolve_dependency(
+        self, dep: Depends, scope: RequestScope, dependency_chain: list[str]
+    ) -> Any:
+        """Resolve a single dependency marked with Depends.
+
+        This method handles caching (if use_cache is True) and delegates
+        to _call_dependency to invoke the dependency function.
+
+        Args:
+            dep: The Depends marker containing the dependency callable/class.
+            scope: Current request scope (provides session, cache, etc.).
+            dependency_chain: List of names for error tracing (mutable).
+
+        Returns:
+            The resolved dependency value.
+
+        Raises:
+            DependencyResolutionError: If the dependency cannot be resolved.
+        """
         if dep.dependency is None:
             raise DependencyResolutionError(
                 message="Dependency function not provided",
@@ -40,7 +70,7 @@ class DependencyContainer:
             return scoped
 
         # Resolve the dependency
-        result = await self._call_dependency(dep.dependency, scope)
+        result = await self._call_dependency(dep.dependency, scope, dependency_chain)
 
         # Cache if enabled
         if dep.use_cache:
@@ -49,13 +79,22 @@ class DependencyContainer:
         return result
 
     def singleton(self, cls: Dependency) -> Any:
-        """Resolve a single dependency."""
+        """Retrieve or create a singleton instance of a class.
+
+        Args:
+            cls: A class (typically a service) that should be instantiated once.
+
+        Returns:
+            The singleton instance.
+        """
         if cls not in self._singletons:
             self._singletons[cls] = cls()
         return self._singletons[cls]
 
-    async def _call_dependency(self, dependency: Callable, scope: RequestScope) -> Any:
-        """Call a dependency function, resolving its own dependencies."""
+    async def _call_dependency(
+        self, dependency: Callable, scope: RequestScope, dependency_chain: list[str]
+    ) -> Any:
+        """Call a dependency function, resolving its dependencies recursively."""
         sig = inspect.signature(dependency)
         type_hints = inspect.get_annotations(dependency)
 
@@ -66,7 +105,11 @@ class DependencyContainer:
 
             dep = _extract_depends(annotation)
             if dep is not None:
-                dep_args[param_name] = await self.resolve_dependency(dep, scope)
+                dep_name = getattr(dep.dependency, "__name__", str(dep.dependency))
+                dependency_chain.append(dep_name)
+                dep_args[param_name] = await self.resolve_dependency(
+                    dep, scope, dependency_chain
+                )
                 continue
 
             if annotation != inspect.Parameter.empty:
@@ -82,7 +125,7 @@ class DependencyContainer:
             return dependency(**dep_args)
 
     def _inject_basic_dependencies(self, type_hint: Type, scope: RequestScope) -> Any:
-        """Inject based on type annotation."""
+        """Inject basic dependencies based on type annotation."""
         if type_hint in self._BASIC_DEPENDENCIES:
             return self._BASIC_DEPENDENCIES[type_hint](scope)
 

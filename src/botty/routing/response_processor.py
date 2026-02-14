@@ -13,12 +13,19 @@ from .registry import MessageRegistry
 
 
 class ResponseProcessor:
-    """
-    Processes responses from handlers (Answer, EditPrevious, etc.).
-    Handles message sending, editing, and registry updates.
+    """Processes responses yielded by handlers.
+
+    Takes an async generator of BaseAnswer objects, sends or edits messages
+    via the bot client, and updates the message registry accordingly.
     """
 
     def __init__(self, registry: MessageRegistry, client: TelegramBotClient):
+        """Initialize the processor.
+
+        Args:
+            registry: The message registry to update.
+            client: The bot client used for sending/editing.
+        """
         self.registry: MessageRegistry = registry
         self.client: TelegramBotClient = client
 
@@ -28,14 +35,15 @@ class ResponseProcessor:
         chat_id: int,
         handler_name: str,
     ) -> None:
-        """
-        Process an async generator that yields Answer/EditPrevious objects.
+        """Iterate over a handler's generator and process each yielded answer.
 
         Args:
-            generator: Async generator yielding response objects
-            update: Telegram update object
-            context: Telegram context object
-            handler_name: Name of the handler function for registry tracking
+            generator: The async generator from the handler.
+            chat_id: The chat ID to send messages to (extracted from update).
+            handler_name: Name of the handler (for registry tracking).
+
+        Errors during processing of individual answers are logged and
+        do not stop processing of subsequent answers.
         """
 
         async for response in generator:

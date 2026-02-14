@@ -13,8 +13,28 @@ from ..domain import (
 
 
 class PTBIncomingAdapter:
+    """Adapter to convert python-telegram-bot Update objects into botty domain Update objects.
+
+    This adapter extracts information from a PTB Update and constructs
+    a botty Update entity, which is then used throughout the
+    application layer.
+    """
+
     @staticmethod
     def from_ptb(update: PTBUpdate) -> Update:
+        """Convert a PTB Update to a botty domain Update.
+
+        Args:
+            update: The incoming Update from python-telegram-bot.
+
+        Returns:
+            A domain Update object containing extracted user, chat, message,
+            callback query, edited message, poll, and poll answer data.
+
+        Note:
+            If a particular field is not present in the PTB update, the
+            corresponding domain field will be set to None.
+        """
         user = None
         if update.effective_user:
             user = EffectiveUser(

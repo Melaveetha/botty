@@ -5,7 +5,7 @@ from botty import (
     EditAnswer,
     HandlerResponse,
     Update,
-    EffectiveUser,
+    InjectableUser,
 )
 
 from src.repositories.task_repository import TaskRepository
@@ -22,7 +22,7 @@ async def new_task_command(
     user_repo: UserRepository,
     task_repo: TaskRepository,
     task_service: TaskService,
-    effective_user: EffectiveUser,
+    effective_user: InjectableUser,
 ) -> HandlerResponse:
     """
     Handle /new and /add commands - create a new task.
@@ -94,7 +94,7 @@ async def list_tasks_command(
     user_repo: UserRepository,
     task_repo: TaskRepository,
     task_service: TaskService,
-    effective_user: EffectiveUser,
+    effective_user: InjectableUser,
 ) -> HandlerResponse:
     """
     Handle /list and /tasks commands - view all tasks.
@@ -135,7 +135,7 @@ async def pending_tasks_command(
     user_repo: UserRepository,
     task_repo: TaskRepository,
     task_service: TaskService,
-    effective_user: EffectiveUser,
+    effective_user: InjectableUser,
 ) -> HandlerResponse:
     """
     Handle /pending command - view incomplete tasks only.
@@ -174,7 +174,7 @@ async def completed_tasks_command(
     context: Context,
     user_repo: UserRepository,
     task_repo: TaskRepository,
-    effective_user: EffectiveUser,
+    effective_user: InjectableUser,
 ) -> HandlerResponse:
     """
     Handle /completed command - view completed tasks.
@@ -216,7 +216,7 @@ async def mark_done_command(
     user_repo: UserRepository,
     task_repo: TaskRepository,
     task_service: TaskService,
-    effective_user: EffectiveUser,
+    effective_user: InjectableUser,
 ) -> HandlerResponse:
     """
     Handle /done command - mark task as complete.
@@ -277,7 +277,7 @@ async def mark_undone_command(
     user_repo: UserRepository,
     task_repo: TaskRepository,
     task_service: TaskService,
-    effective_user: EffectiveUser,
+    effective_user: InjectableUser,
 ) -> HandlerResponse:
     """
     Handle /undone command - mark task as incomplete.
@@ -334,7 +334,7 @@ async def delete_task_command(
     user_repo: UserRepository,
     task_repo: TaskRepository,
     task_service: TaskService,
-    effective_user: EffectiveUser,
+    effective_user: InjectableUser,
 ) -> HandlerResponse:
     """
     Handle /delete command - delete a task.
@@ -385,7 +385,7 @@ async def search_tasks_command(
     context: Context,
     user_repo: UserRepository,
     task_repo: TaskRepository,
-    effective_user: EffectiveUser,
+    effective_user: InjectableUser,
 ) -> HandlerResponse:
     """
     Handle /search command - search tasks by keyword.
@@ -437,7 +437,7 @@ async def stats_command(
     user_repo: UserRepository,
     task_repo: TaskRepository,
     task_service: TaskService,
-    effective_user: EffectiveUser,
+    effective_user: InjectableUser,
 ) -> HandlerResponse:
     """
     Handle /stats command - show task statistics.

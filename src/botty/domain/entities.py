@@ -24,6 +24,8 @@ class Message:
 
 @dataclass
 class EffectiveUser:
+    """Represents a Telegram user with essential fields."""
+
     id: int
     first_name: str
     username: str | None = None
@@ -31,12 +33,16 @@ class EffectiveUser:
 
 @dataclass
 class EffectiveChat:
+    """Represents a Telegram chat (private, group, supergroup, channel)."""
+
     id: int
     type: str
 
 
 @dataclass
 class EffectiveMessage:
+    """Represents a message with text, ignoring advanced media fields."""
+
     message_id: int
     chat_id: int
     date: datetime
@@ -45,6 +51,8 @@ class EffectiveMessage:
 
 @dataclass
 class CallbackQuery:
+    """Represents a callback query from an inline button press."""
+
     id: str
     data: str | None
     user_id: int
@@ -54,7 +62,7 @@ class CallbackQuery:
 
 @dataclass
 class EditedMessage:
-    """Represents an edited message."""
+    """Represents a message that has been edited."""
 
     message_id: int
     chat_id: int
@@ -65,6 +73,8 @@ class EditedMessage:
 
 @dataclass
 class Poll:
+    """Represents a Telegram poll."""
+
     id: str
     question: str
     options: list[PollOption]
@@ -77,6 +87,8 @@ class Poll:
 
 @dataclass
 class PollAnswer:
+    """Represents a user's answer to a poll."""
+
     poll_id: str
     user: EffectiveUser | None
     option_ids: list[int]
@@ -84,6 +96,12 @@ class PollAnswer:
 
 @dataclass
 class Update:
+    """A framework-agnostic representation of a Telegram update.
+
+    This is the main input object passed to handlers, containing all possible
+    update types. Use the `get_chat_id()` method to reliably extract the chat ID.
+    """
+
     update_id: int
     user: EffectiveUser | None = None
     chat: EffectiveChat | None = None
@@ -103,7 +121,14 @@ class Update:
         return self.chat.id if self.chat else None
 
     def get_chat_id(self) -> int:
-        """Extract chat ID from update with comprehensive fallback logic."""
+        """Extract the chat ID from the update with a comprehensive fallback.
+
+        Returns:
+            The chat ID.
+
+        Raises:
+            ChatIdNotFoundError: If no chat ID can be determined from any field.
+        """
         if self.message:
             return self.message.chat_id
         elif self.callback_query and self.callback_query.chat_id:

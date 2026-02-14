@@ -32,15 +32,6 @@ def validate_handler(func: Handler, handler_type: str = "command") -> None:
 
     Raises:
         InvalidHandlerError: If validation fails
-
-    Example:
-        ```python
-        @router.command("start")
-        async def start_handler(update: Update, context: Context):
-            yield Answer(text="Hello!")
-
-        # This will be validated automatically when registered
-        ```
     """
     func_name = func.__name__
 
@@ -98,21 +89,14 @@ def validate_handler(func: Handler, handler_type: str = "command") -> None:
 
 
 def is_valid_handler(func: Handler, silent: bool = True) -> bool:
-    """
-    Check if a function is a valid handler without raising exceptions.
+    """Check if a function is a valid handler without raising exceptions.
 
     Args:
-        func: Function to check
-        silent: If False, log validation errors
+        func: Function to check.
+        silent: If False, log validation errors.
 
     Returns:
-        True if valid, False otherwise
-
-    Example:
-        ```python
-        if is_valid_handler(my_function):
-            router.command("test")(my_function)
-        ```
+        True if the function passes validation, else False.
     """
     try:
         validate_handler(func)

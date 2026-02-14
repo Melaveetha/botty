@@ -14,7 +14,7 @@ from botty import (
 )
 from botty.context import ContextProtocol
 from botty.di import DependencyResolver, RequestScope
-from botty.exceptions import DatabaseNotConfiguredError, DependencyResolutionError
+from botty.exceptions import DependencyResolutionError
 from botty.testing import TestContext, TestDependencyContainer
 
 
@@ -176,8 +176,8 @@ class TestCaching:
         dep = Depends(dep_func, use_cache=True)
 
         # Resolve twice
-        await container.resolve_dependency(dep, request_scope)
-        await container.resolve_dependency(dep, request_scope)
+        await container.resolve_dependency(dep, request_scope, [])
+        await container.resolve_dependency(dep, request_scope, [])
 
         assert call_count == 1
 
@@ -191,8 +191,8 @@ class TestCaching:
 
         dep = Depends(dep_func, use_cache=False)
 
-        await container.resolve_dependency(dep, request_scope)
-        await container.resolve_dependency(dep, request_scope)
+        await container.resolve_dependency(dep, request_scope, [])
+        await container.resolve_dependency(dep, request_scope, [])
 
         assert call_count == 2
 
@@ -218,8 +218,8 @@ class TestCaching:
         dep = Depends(outer_dep, use_cache=False)
 
         # Resolve twice
-        await container.resolve_dependency(dep, request_scope)
-        await container.resolve_dependency(dep, request_scope)
+        await container.resolve_dependency(dep, request_scope, [])
+        await container.resolve_dependency(dep, request_scope, [])
 
         # Inner should be called once (cache), outer result is not cached
         assert inner_call_count == 1
@@ -249,7 +249,7 @@ class TestErrorCases:
         scope = RequestScope(update, ctx)
         resolver = DependencyResolver(container)
 
-        with pytest.raises(DatabaseNotConfiguredError) as exc:
+        with pytest.raises(DependencyResolutionError) as exc:
             await resolver.resolve_handler(session_handler_no_db, scope)  # ty: ignore [invalid-argument-type]
         assert "no database provider configured" in str(exc.value)
         assert "handler 'session_handler_no_db'" in str(exc.value)
@@ -269,7 +269,7 @@ class TestErrorCases:
     async def test_depends_with_none_dependency_raises(self, container, request_scope):
         dep = Depends(None)  # type: ignore
         with pytest.raises(DependencyResolutionError) as exc:
-            await container.resolve_dependency(dep, request_scope)
+            await container.resolve_dependency(dep, request_scope, [])
         assert "dependency function not provided" in str(exc.value).lower()
 
 
@@ -309,7 +309,7 @@ class TestTestDoubles:
         container.override(get_service, fake_service)
 
         dep = Depends(get_service)
-        resolved = await container.resolve_dependency(dep, request_scope)
+        resolved = await container.resolve_dependency(dep, request_scope, [])
         assert resolved is fake_service
 
     async def test_test_request_scope_overrides(

@@ -10,15 +10,14 @@ from ..responses import EditAnswer
 
 @dataclass
 class MessageRecord:
-    """
-    Record about sent message with metadata.
+    """Record about a sent message stored in the MessageRegistry.
 
     Attributes:
-        message_id: Telegram message ID
-        chat_id: Telegram chat ID
-        handler_name: Name of the handler that sent this message
-        timestamp: Unix timestamp when message was sent
-        metadata: Optional additional metadata
+        message_id: Telegram message ID.
+        chat_id: Telegram chat ID.
+        handler_name: Name of the handler that sent this message.
+        timestamp: Unix timestamp when the message was sent.
+        metadata: Optional custom metadata provided at registration.
     """
 
     message_id: int
@@ -38,22 +37,20 @@ class MessageRecord:
 
 
 class MessageRegistry:
-    """
-    Registry for tracking bot-sent messages with automatic cleanup.
-
-    !! Not persistent
+    """Registry for tracking bot-sent messages with automatic cleanup.
 
     Features:
-    - Track messages by chat, handler, and custom keys
-    - Automatic cleanup of old messages
-    - Configurable limits per chat
-    - Memory-efficient using deques
+    - Track messages by chat, handler, and custom keys.
+    - Automatic cleanup of old messages (FIFO per chat).
+    - Configurable limits per chat.
+    - Memory-efficient using deques.
+
+    The registry is stored in `bot_data` and shared across all handlers.
+    It is used primarily by ResponseProcessor to find messages for editing.
 
     Example:
         registry = MessageRegistry(max_messages_per_chat=50)
-        registry.register_message(message, handler_name="start_command")
-
-        # Later, find the message
+        registry.register_message(message, handler_name="start")
         record = registry.get_last_message(chat_id)
     """
 
@@ -61,11 +58,11 @@ class MessageRegistry:
         self,
         max_messages_per_chat: int = 100,
     ):
-        """
-        Initialize message registry with cleanup configuration.
+        """Initialize the registry.
 
         Args:
-            max_messages_per_chat: Maximum messages to keep per chat
+            max_messages_per_chat: Maximum number of messages to keep per chat.
+                                   Older messages are automatically discarded.
         """
         self.max_messages_per_chat = max_messages_per_chat
 
@@ -88,25 +85,26 @@ class MessageRegistry:
         key: str | None = None,
         metadata: dict | None = None,
     ) -> MessageRecord:
-        """
-        Register a sent message.
+        """Store a sent message in the registry.
 
         Args:
-            message: Telegram Message object
-            handler_name: Name of handler that sent the message
-            key: Optional unique key for later retrieval
-            metadata: Optional metadata to store with the message
+            message: The Message object returned by the bot client.
+            handler_name: Name of the handler that produced this message.
+            key: Optional unique key for later retrieval.
+            metadata: Optional extra data to store.
 
         Returns:
-            MessageRecord for the registered message
+            The created MessageRecord.
 
         Example:
+            ```python
             record = registry.register_message(
                 message,
                 handler_name="profile_command",
                 key="user_profile_123",
                 metadata={"user_id": 123}
             )
+            ```
         """
 
         record = MessageRecord(
@@ -143,28 +141,26 @@ class MessageRegistry:
         return record
 
     def get_last_message(self, chat_id: int) -> MessageRecord | None:
-        """
-        Get the last message sent in a chat.
+        """Retrieve the most recent message sent in a chat.
 
         Args:
-            chat_id: Chat ID to query
+            chat_id: Telegram chat ID.
 
         Returns:
-            MessageRecord if found, None otherwise
+            The latest MessageRecord, or None if none exist.
         """
         if chat_id in self._registry and self._registry[chat_id]:
             return self._registry[chat_id][-1]
         return None
 
     def get_by_key(self, key: str) -> MessageRecord | None:
-        """
-        Get a message by its unique key.
+        """Retrieve a message by its unique key.
 
         Args:
-            key: Unique key assigned when registering
+            key: The key provided during registration.
 
         Returns:
-            MessageRecord if found, None otherwise
+            The associated MessageRecord, or None if not found.
         """
         return self._key_registry.get(key)
 
@@ -174,16 +170,15 @@ class MessageRegistry:
         chat_id: int | None = None,
         limit: int | None = None,
     ) -> list[MessageRecord]:
-        """
-        Get messages sent by a specific handler.
+        """Retrieve messages sent by a specific handler.
 
         Args:
-            handler_name: Name of the handler
-            chat_id: Optional chat ID to filter by
-            limit: Optional limit on number of results
+            handler_name: Name of the handler.
+            chat_id: If provided, only messages from this chat are returned.
+            limit: Maximum number of messages (most recent first).
 
         Returns:
-            List of MessageRecords (most recent first)
+            List of matching MessageRecords.
         """
         records = self._handler_registry.get(handler_name, []).copy()
 
@@ -201,15 +196,14 @@ class MessageRegistry:
     def get_all_for_chat(
         self, chat_id: int, limit: int | None = None
     ) -> list[MessageRecord]:
-        """
-        Get all messages for a chat.
+        """Retrieve all messages for a chat, most recent first.
 
         Args:
-            chat_id: Chat ID
-            limit: Optional limit (returns most recent)
+            chat_id: Telegram chat ID.
+            limit: Maximum number of messages to return.
 
         Returns:
-            List of MessageRecords (most recent first)
+            List of MessageRecords.
         """
         if chat_id not in self._registry:
             return []
@@ -245,15 +239,22 @@ class MessageRegistry:
     def find_message_to_edit(
         self, answer: EditAnswer, chat_id: int, handler_name: str
     ) -> int | None:
-        """
-        Find the message ID to edit based on answer criteria.
+        """Determine which message ID to edit based on the EditAnswer criteria.
 
-        Priority:
-        1. Direct message ID
-        2. Message key lookup
-        3. Handler name from answer lookup
-        3. Current handler last message
-        4. Last message in chat
+        Priority order:
+        1. Direct message_id from answer.
+        2. Lookup by message_key.
+        3. Handler name specified in answer.
+        4. Last message from current handler.
+        5. Last message in chat (fallback).
+
+        Args:
+            answer: The EditAnswer containing editing hints.
+            chat_id: The chat where editing should occur.
+            handler_name: Name of the handler currently executing.
+
+        Returns:
+            The message ID to edit, or None if no suitable message found.
         """
         # 1. Direct message ID
         if answer.message_id is not None:

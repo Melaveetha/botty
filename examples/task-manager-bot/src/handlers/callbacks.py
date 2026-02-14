@@ -5,8 +5,8 @@ from botty import (
     EditAnswer,
     HandlerResponse,
     Update,
-    CallbackQuery,
-    EffectiveUser,
+    InjectableCallbackQuery,
+    InjectableUser,
 )
 
 from src.repositories.task_repository import TaskRepository
@@ -21,8 +21,8 @@ async def task_done_callback(
     context: Context,
     user_repo: UserRepository,
     task_repo: TaskRepository,
-    query: CallbackQuery,
-    effective_user: EffectiveUser,
+    query: InjectableCallbackQuery,
+    effective_user: InjectableUser,
 ) -> HandlerResponse:
     """
     Handle callback when user clicks 'Mark Done' button.
@@ -69,8 +69,8 @@ async def task_delete_callback(
     context: Context,
     user_repo: UserRepository,
     task_repo: TaskRepository,
-    query: CallbackQuery,
-    effective_user: EffectiveUser,
+    query: InjectableCallbackQuery,
+    effective_user: InjectableUser,
 ) -> HandlerResponse:
     """
     Handle callback when user clicks 'Delete' button.
@@ -113,8 +113,8 @@ async def refresh_list_callback(
     context: Context,
     user_repo: UserRepository,
     task_repo: TaskRepository,
-    query: CallbackQuery,
-    effective_user: EffectiveUser,
+    query: InjectableCallbackQuery,
+    effective_user: InjectableUser,
 ) -> HandlerResponse:
     """
     Handle callback to refresh task list.

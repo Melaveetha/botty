@@ -9,18 +9,26 @@ from .context import Context, ContextProtocol
 from .di import Depends, HandlerResponse
 from .database import DatabaseProvider, SQLiteProvider
 from .domain import (
+    Update,
+    Message,
+    EffectiveUser,
+    EffectiveChat,
+    EffectiveMessage,
+    CallbackQuery,
+    EditedMessage,
     Poll,
     PollAnswer,
-    Update,
     BaseRepository,
     BaseService,
 )
 from .helpers import (
-    CallbackQuery,
-    EditedMessage,
-    EffectiveChat,
-    EffectiveMessage,
-    EffectiveUser,
+    InjectableCallbackQuery,
+    InjectableEditedMessage,
+    InjectableChat,
+    InjectableMessage,
+    InjectableUser,
+    InjectablePoll,
+    InjectablePollAnswer,
 )
 from .responses import (
     BaseAnswer,
@@ -52,6 +60,7 @@ __all__ = [
     "HandlerResponse",
     # Domain entities
     "Update",
+    "Message",
     "EffectiveUser",
     "EffectiveChat",
     "EffectiveMessage",
@@ -59,6 +68,14 @@ __all__ = [
     "EditedMessage",
     "Poll",
     "PollAnswer",
+    # Helpers
+    "InjectableCallbackQuery",
+    "InjectableEditedMessage",
+    "InjectableChat",
+    "InjectableMessage",
+    "InjectableUser",
+    "InjectablePoll",
+    "InjectablePollAnswer",
     # Domain repositories
     "BaseRepository",
     # Domain services

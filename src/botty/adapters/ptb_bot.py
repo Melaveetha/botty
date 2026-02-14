@@ -24,10 +24,32 @@ from ..responses import (
 
 
 class PTBBotAdapter(TelegramBotClient):
+    """Concrete implementation of TelegramBotClient using python-telegram-bot's Bot.
+
+    This adapter sends and edits messages via the PTB Bot instance, mapping
+    botty's response objects to the appropriate PTB send_* methods.
+    """
+
     def __init__(self, bot: Bot):
+        """Initialize the adapter with a PTB Bot instance.
+
+        Args:
+            bot: The PTB Bot instance used for sending and editing messages.
+        """
         self._bot = bot
 
     async def send(self, chat_id: int, answer: BaseAnswer) -> Message | None:
+        """Send a message to a chat using the appropriate PTB method based on answer type.
+
+        Args:
+            chat_id: The Telegram chat ID to send the message to.
+            answer: The botty response object (e.g., Answer, PhotoAnswer, etc.).
+
+        Returns:
+            A domain Message object if a message was sent, or None if the
+            answer was EmptyAnswer or EditAnswer (which is handled separately) or answer type not known.
+        """
+
         message: TGMessage
         match answer:
             case Answer():
@@ -85,6 +107,24 @@ class PTBBotAdapter(TelegramBotClient):
     async def edit(
         self, chat_id: int, message_id: int | None, answer: BaseAnswer
     ) -> Message | None:
+        """Edit an existing message or send a new one if editing fails.
+
+        This method currently only supports text editing. If
+        message_id is None or editing fails, it falls back to sending a new
+        message.
+
+        Args:
+            chat_id: The Telegram chat ID.
+            message_id: The ID of the message to edit, if known.
+            answer: The EditAnswer containing new text and options.
+
+        Returns:
+            A botty Message object for the edited or newly sent message,
+            or None if the operation failed and no fallback was possible.
+
+        Raises:
+            BottyError: If answer is not an EditAnswer.
+        """
         if not isinstance(answer, EditAnswer):
             raise BottyError(
                 f"Edit received answer of type: {type(answer)}"

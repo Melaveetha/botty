@@ -2,9 +2,9 @@ from typing import Any
 
 
 class BottyError(Exception):
-    """Base exception of all Botty exceptions.
+    """Base exception of all botty exceptions.
 
-    All custom Botty exceptions inherit from this base class.
+    All custom botty exceptions inherit from this base class.
 
     Attributes:
         message: The error message
