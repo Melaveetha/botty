@@ -4,6 +4,8 @@ Task Manager Bot - Example Botty Application
 A personal task manager bot demonstrating all Botty framework features.
 """
 
+from collections.abc import AsyncGenerator
+
 import os
 import sys
 from pathlib import Path
@@ -11,7 +13,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from loguru import logger
 
-from botty import AppBuilder, SQLiteProvider
+from botty import AppBuilder, SQLiteProvider, Update, ContextProtocol, BaseAnswer
 
 # Load environment variables
 load_dotenv()
@@ -63,6 +65,16 @@ def validate_environment():
     return bot_token
 
 
+async def my_middleware(
+    update: Update, context: ContextProtocol, inner: AsyncGenerator[BaseAnswer, None]
+) -> AsyncGenerator[BaseAnswer, None]:
+    logger.info("Before handler")
+    async for response in inner:
+        logger.info(f"Intercepted response: {response}")
+        yield response
+    logger.info("After handler")
+
+
 def main():
     """Main entry point for the bot."""
     # Configure logging
@@ -86,7 +98,13 @@ def main():
 
         # Build and configure the bot
         logger.info("Building bot application...")
-        app = AppBuilder().token(bot_token).database(SQLiteProvider(db_path)).build()
+        app = (
+            AppBuilder()
+            .token(bot_token)
+            .database(SQLiteProvider(db_path))
+            .add_middleware(my_middleware)
+            .build()
+        )
 
         logger.info("✅ Bot application built successfully")
         logger.info("🚀 Starting bot polling...")

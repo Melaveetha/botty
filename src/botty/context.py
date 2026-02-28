@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     from .routing import MessageRegistry, ConversationRegistry
     from .di import DependencyContainer
     from .ports import TelegramBotClient
+    from .middleware import Middleware
 
 
 class BotData:
@@ -25,6 +26,7 @@ class BotData:
     database_provider: "DatabaseProvider | None"
     bot_client: "TelegramBotClient"
     conversation_registry: "ConversationRegistry"
+    middlewares: list["Middleware"]
 
     def __init__(self):
         # TODO: add error when not properly initialized
@@ -33,6 +35,7 @@ class BotData:
         self.database_provider = None
         self.bot_client = None  # type: ignore [invalid-assignment]
         self.conversation_registry = None  # type: ignore [invalid-assignment]
+        self.middlewares = []
 
 
 @dataclass

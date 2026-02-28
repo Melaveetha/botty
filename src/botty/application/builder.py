@@ -1,3 +1,4 @@
+from botty.middleware import Middleware
 from pathlib import Path
 from typing import Self
 
@@ -34,6 +35,7 @@ class AppBuilder:
         self._database_provider: DatabaseProvider | None = None
         self._discovery: bool = True
         self._webhook: WebhookConfig | None = None
+        self._middlewares: list[Middleware] = []
 
     def token(self, token: str) -> Self:
         """Set the bot token obtained from @BotFather.
@@ -90,6 +92,22 @@ class AppBuilder:
             The builder instance for chaining.
         """
         self._handlers_dir = Path(path)
+        return self
+
+    def add_middleware(self, middleware: Middleware) -> Self:
+        """Add a single middleware.
+
+        Args:
+            middleware: A functions that receives update: Update, context: Context and generator: AsyncGenerator[BaseAnswer, None] and returns AsyncGenerator[BaseAnswer, None].
+
+        Returns:
+            The builder instance for chaining.
+        """
+        self._middlewares.append(middleware)
+        return self
+
+    def add_middlewares(self, middlewares: list[Middleware]) -> Self:
+        self._middlewares.extend(middlewares)
         return self
 
     def add_router(self, router: Router) -> Self:
@@ -150,5 +168,9 @@ class AppBuilder:
         if self._discovery:
             self._routers.extend(discover_routers(self._handlers_dir))
         return Application(
-            self._token, self._database_provider, self._routers, self._webhook
+            self._token,
+            self._database_provider,
+            self._routers,
+            self._middlewares,
+            self._webhook,
         )

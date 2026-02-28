@@ -1,6 +1,8 @@
+from collections.abc import AsyncGenerator
 from types import MethodType
 
-from ..di import DependencyResolver, RequestScope, HandlerProtocol
+from ..di import DependencyResolver, HandlerProtocol, RequestScope
+from ..responses import BaseAnswer
 from .conversation import Conversation
 from .response_processor import ResponseProcessor
 
@@ -32,10 +34,16 @@ async def execute_callable(
 
     generator = func(**kwargs)
 
+    middlewares = scope.context.bot_data.middlewares
+
+    wrapped_generator: AsyncGenerator[BaseAnswer, None] = generator
+    for middleware in reversed(middlewares):
+        wrapped_generator = middleware(scope.update, scope.context, wrapped_generator)
+
     processor = ResponseProcessor(
         scope.context.bot_data.message_registry, scope.context.bot_data.bot_client
     )
 
     await processor.process_async_generator(
-        generator, scope.update.get_chat_id(), handle_name
+        wrapped_generator, scope.update.get_chat_id(), handle_name
     )
