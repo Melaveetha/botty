@@ -137,11 +137,17 @@ class PTBBotAdapter(TelegramBotClient):
                 chat_id=chat_id, message_id=message_id, **answer.to_dict()
             )
 
-            if not result:
+            if result is None:
                 logger.warning(f"Got {result} when editing message {message_id}")
+                return
+            if isinstance(result, bool):
+                return None
+            return Message.from_telegram(result)
         except Exception as e:
             logger.exception(f"Failed to edit message {message_id}: {e}")
+
             # Fall back to sending new message
             message = await self._bot.send_message(chat_id=chat_id, **answer.to_dict())
+
             logger.debug(f"Sent new message {message.message_id} after edit failed")
             return Message.from_telegram(message)
