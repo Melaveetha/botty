@@ -101,10 +101,24 @@ class AppBuilder:
     ) -> Self:
         """Register a global exception handler.
 
+        When an exception of type `exc_class` (or its subclass) is raised during
+        handler execution, the registered handler is called instead of propagating
+        the error. The exception object is automatically injected if the handler
+        has a parameter of type `Exception` (or any subclass).
+
+        Handlers are tried in order of registration.
+
         Args:
-            exc_class: The exception class to handle (subclasses will also match,
-                       with the most specific handler registered first taking precedence).
+            exc_class: The exception class to handle (subclasses will also match).
             handler: An async generator function (must match the Handler protocol).
+
+        Example:
+            ```python
+            async def handle_value_error(update, context, exc: ValueError):
+                yield Answer(f"Invalid input: {exc}")
+
+            builder.add_exception_handler(ValueError, handle_value_error)
+            ```
         """
         self._exception_handlers.append((exc_class, handler))
         return self

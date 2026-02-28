@@ -76,10 +76,3 @@ class ConversationStateNotFound(BottyError):
 
     def __init__(self, message: str | None = None):
         super().__init__(message=message or "Conversation was not started")
-
-
-class ExceptionNotFound(BottyError):
-    """Raised when there is no exception in scope"""
-
-    def __init__(self, message: str | None = None):
-        super().__init__(message=message or "There is no exception")

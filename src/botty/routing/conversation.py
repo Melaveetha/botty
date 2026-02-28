@@ -62,13 +62,25 @@ def step[F: Callable[..., Any]](method: F) -> F:
     inside the method. After a step finishes, the framework checks `self._next_step`
     to determine which step to run next.
 
+    To persist data across steps, use the `ConversationState` injectable:
+
     Example:
         ```python
-        @step
-        async def ask_age(self, update: Update, context: Context) -> HandlerResponse:
-            yield Answer("How old are you?")
-            self.step("confirm_age")   # go to the next step
+         @step
+        async def ask_age(
+            self,
+            update: Update,
+            context: Context,
+            state: ConversationState   # ← automatically injected
+        ) -> HandlerResponse:
+            name = update.message.text
+            state["name"] = name        # ← saved in user_data
+            yield Answer(f"Hello {name}, how old are you?")
+            self.step("farewell")
         ```
+
+    The state is a plain dictionary that lives in `context.user_data.conversation_data`.
+    Any changes made inside a step are automatically persisted.
     """
     method._is_step = True
     method._is_entry = False
