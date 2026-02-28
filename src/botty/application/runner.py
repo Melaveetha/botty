@@ -1,5 +1,3 @@
-from botty.middleware import Middleware
-from botty.exceptions import BottyError
 from telegram.ext import Application as PTBApplication
 from telegram.ext import ApplicationBuilder as PTBApplicationBuilder
 from telegram.ext import ContextTypes, ExtBot
@@ -7,7 +5,9 @@ from telegram.ext import ContextTypes, ExtBot
 from ..adapters import PTBBotAdapter
 from ..context import BotData, ChatData, Context, UserData
 from ..database import DatabaseProvider
-from ..di import DependencyContainer
+from ..di import DependencyContainer, HandlerProtocol
+from ..exceptions import BottyError
+from ..middleware import Middleware
 from ..routing import (
     ConversationDispatcher,
     ConversationRegistry,
@@ -34,6 +34,7 @@ class Application:
         database_provider: DatabaseProvider | None,
         routers: list[Router],
         middlewares: list[Middleware] = [],
+        exception_handlers: list[tuple[type[Exception], HandlerProtocol]] = [],
         webhook: WebhookConfig | None = None,
     ):
         """Initialize the application and register all handlers.
@@ -57,6 +58,7 @@ class Application:
         self.application.bot_data.bot_client = PTBBotAdapter(self.application.bot)
         self.application.bot_data.conversation_registry = ConversationRegistry()
         self.application.bot_data.middlewares = middlewares
+        self.application.bot_data.exception_handlers = exception_handlers
 
         self.application.add_handler(ConversationDispatcher(), group=-1)
         for router in routers:

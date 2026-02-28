@@ -6,7 +6,7 @@ from telegram.ext import CallbackContext, ExtBot, Application as TgApplication
 if TYPE_CHECKING:
     from .database import DatabaseProvider
     from .routing import MessageRegistry, ConversationRegistry
-    from .di import DependencyContainer
+    from .di import DependencyContainer, Handler
     from .ports import TelegramBotClient
     from .middleware import Middleware
 
@@ -27,6 +27,7 @@ class BotData:
     bot_client: "TelegramBotClient"
     conversation_registry: "ConversationRegistry"
     middlewares: list["Middleware"]
+    exception_handlers: list[tuple[type[Exception], "Handler"]]
 
     def __init__(self):
         # TODO: add error when not properly initialized
@@ -36,6 +37,7 @@ class BotData:
         self.bot_client = None  # type: ignore [invalid-assignment]
         self.conversation_registry = None  # type: ignore [invalid-assignment]
         self.middlewares = []
+        self.exception_handlers = []
 
 
 @dataclass

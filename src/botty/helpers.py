@@ -209,7 +209,6 @@ Example:
     ```
 """
 
-
 # TODO: support for inline queries
 
 __all__ = [

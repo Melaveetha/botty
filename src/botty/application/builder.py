@@ -1,11 +1,12 @@
-from botty.middleware import Middleware
 from pathlib import Path
 from typing import Self
 
 from loguru import logger
 
 from ..database import DatabaseProvider
+from ..di import HandlerProtocol
 from ..exceptions import ConfigurationError
+from ..middleware import Middleware
 from ..routing import Router, discover_routers
 from .runner import Application
 from .webhook import WebhookConfig
@@ -36,6 +37,7 @@ class AppBuilder:
         self._discovery: bool = True
         self._webhook: WebhookConfig | None = None
         self._middlewares: list[Middleware] = []
+        self._exception_handlers: list[tuple[type[Exception], HandlerProtocol]] = []
 
     def token(self, token: str) -> Self:
         """Set the bot token obtained from @BotFather.
@@ -92,6 +94,19 @@ class AppBuilder:
             The builder instance for chaining.
         """
         self._handlers_dir = Path(path)
+        return self
+
+    def add_exception_handler(
+        self, exc_class: type[Exception], handler: HandlerProtocol
+    ) -> Self:
+        """Register a global exception handler.
+
+        Args:
+            exc_class: The exception class to handle (subclasses will also match,
+                       with the most specific handler registered first taking precedence).
+            handler: An async generator function (must match the Handler protocol).
+        """
+        self._exception_handlers.append((exc_class, handler))
         return self
 
     def add_middleware(self, middleware: Middleware) -> Self:
@@ -172,5 +187,6 @@ class AppBuilder:
             self._database_provider,
             self._routers,
             self._middlewares,
+            self._exception_handlers,
             self._webhook,
         )

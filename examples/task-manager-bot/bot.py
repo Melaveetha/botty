@@ -13,7 +13,16 @@ from pathlib import Path
 from dotenv import load_dotenv
 from loguru import logger
 
-from botty import AppBuilder, SQLiteProvider, Update, ContextProtocol, BaseAnswer
+from botty import (
+    AppBuilder,
+    SQLiteProvider,
+    Update,
+    ContextProtocol,
+    BaseAnswer,
+    Context,
+    HandlerResponse,
+    Answer,
+)
 
 # Load environment variables
 load_dotenv()
@@ -75,6 +84,15 @@ async def my_middleware(
     logger.info("After handler")
 
 
+async def on_any_error(
+    update: Update,
+    context: Context,
+    exc: Exception,
+) -> HandlerResponse:
+    logger.error(f"Unhandled exception: {exc}")
+    yield Answer("Sorry, something went wrong. Please try again later.")
+
+
 def main():
     """Main entry point for the bot."""
     # Configure logging
@@ -102,6 +120,7 @@ def main():
             AppBuilder()
             .token(bot_token)
             .database(SQLiteProvider(db_path))
+            .add_exception_handler(Exception, on_any_error)
             .add_middleware(my_middleware)
             .build()
         )
