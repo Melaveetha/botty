@@ -1,3 +1,4 @@
+from botty.exceptions import BottyError
 from telegram.ext import Application as PTBApplication
 from telegram.ext import ApplicationBuilder as PTBApplicationBuilder
 from telegram.ext import ContextTypes, ExtBot
@@ -7,11 +8,12 @@ from ..context import BotData, ChatData, Context, UserData
 from ..database import DatabaseProvider
 from ..di import DependencyContainer
 from ..routing import (
-    MessageRegistry,
-    Router,
     ConversationDispatcher,
     ConversationRegistry,
+    MessageRegistry,
+    Router,
 )
+from .webhook import WebhookConfig
 
 
 class Application:
@@ -30,6 +32,7 @@ class Application:
         token: str,
         database_provider: DatabaseProvider | None,
         routers: list[Router],
+        webhook: WebhookConfig | None = None,
     ):
         """Initialize the application and register all handlers.
 
@@ -41,6 +44,7 @@ class Application:
         context_types = ContextTypes(
             context=Context, bot_data=BotData, chat_data=ChatData, user_data=UserData
         )
+        self._webhook = webhook
         self.application: PTBApplication[
             ExtBot, Context, UserData, ChatData, BotData, None
         ] = PTBApplicationBuilder().token(token).context_types(context_types).build()
@@ -65,4 +69,23 @@ class Application:
         """
         if self.application.bot_data.database_provider:
             self.application.bot_data.database_provider.create_engine()
-        self.application.run_polling()
+        if self._webhook is None:
+            self.application.run_polling()
+        else:
+            self._launch_webhook()
+
+    def _launch_webhook(self):
+        config = self._webhook
+        if config is None:
+            raise BottyError(
+                "Unexpected call of `_launch_webhook` while webhook config is not specified"
+            )
+        self.application.run_webhook(
+            listen=config.listen,
+            port=config.port,
+            url_path=config.path.lstrip("/"),
+            webhook_url=config.url,
+            secret_token=config.secret_token,
+            cert=str(config.cert) if config.cert else None,
+            key=str(config.key) if config.key else None,
+        )

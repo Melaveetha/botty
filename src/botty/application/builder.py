@@ -1,12 +1,13 @@
-from loguru import logger
 from pathlib import Path
 from typing import Self
 
+from loguru import logger
 
 from ..database import DatabaseProvider
 from ..exceptions import ConfigurationError
 from ..routing import Router, discover_routers
 from .runner import Application
+from .webhook import WebhookConfig
 
 
 class AppBuilder:
@@ -32,6 +33,7 @@ class AppBuilder:
         self._routers: list[Router] = []
         self._database_provider: DatabaseProvider | None = None
         self._discovery: bool = True
+        self._webhook: WebhookConfig | None = None
 
     def token(self, token: str) -> Self:
         """Set the bot token obtained from @BotFather.
@@ -55,6 +57,24 @@ class AppBuilder:
             The builder instance for chaining.
         """
         self._database_provider = provider
+        return self
+
+    def webhook(self, webhook: WebhookConfig) -> Self:
+        """Configure the bot to run in webhook mode.
+
+        Args:
+            url: Public HTTPS URL where Telegram will send updates (e.g., "https://example.com/webhook").
+            port: Local port to listen on (default 8443).
+            listen: IP address to bind (default "0.0.0.0").
+            path: URL path that will receive updates (default "/").
+            secret_token: Optional secret to verify incoming requests (recommended).
+            cert: Path to SSL certificate file if using a self‑signed certificate.
+            key: Path to private key file (required if cert is provided).
+
+        Returns:
+            The builder instance for chaining.
+        """
+        self._webhook = webhook
         return self
 
     def handlers_directory(self, path: str | Path) -> Self:
@@ -129,4 +149,6 @@ class AppBuilder:
             )
         if self._discovery:
             self._routers.extend(discover_routers(self._handlers_dir))
-        return Application(self._token, self._database_provider, self._routers)
+        return Application(
+            self._token, self._database_provider, self._routers, self._webhook
+        )
