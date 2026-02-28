@@ -29,6 +29,7 @@ from .helpers import (
     InjectableUser,
     InjectablePoll,
     InjectablePollAnswer,
+    ConversationState,
 )
 from .responses import (
     BaseAnswer,
@@ -76,6 +77,7 @@ __all__ = [
     "InjectableUser",
     "InjectablePoll",
     "InjectablePollAnswer",
+    "ConversationState",
     # Domain repositories
     "BaseRepository",
     # Domain services

@@ -6,7 +6,12 @@ from ..adapters import PTBBotAdapter
 from ..context import BotData, ChatData, Context, UserData
 from ..database import DatabaseProvider
 from ..di import DependencyContainer
-from ..routing import MessageRegistry, Router
+from ..routing import (
+    MessageRegistry,
+    Router,
+    ConversationDispatcher,
+    ConversationRegistry,
+)
 
 
 class Application:
@@ -39,13 +44,18 @@ class Application:
         self.application: PTBApplication[
             ExtBot, Context, UserData, ChatData, BotData, None
         ] = PTBApplicationBuilder().token(token).context_types(context_types).build()
+
         self.application.bot_data.message_registry = MessageRegistry()
         self.application.bot_data.database_provider = database_provider
         self.application.bot_data.dependency_container = DependencyContainer()
         self.application.bot_data.bot_client = PTBBotAdapter(self.application.bot)
+        self.application.bot_data.conversation_registry = ConversationRegistry()
 
+        self.application.add_handler(ConversationDispatcher(), group=-1)
         for router in routers:
             self.application.add_handlers(router.get_handlers())
+            for conversation in router.conversations:
+                self.application.bot_data.conversation_registry.register(conversation)
 
     def launch(self):
         """Start the bot in polling mode.

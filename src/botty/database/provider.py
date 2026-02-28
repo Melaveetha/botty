@@ -41,6 +41,8 @@ class DatabaseProvider(ABC):
         Botty manages session lifecycle automatically via RequestScope.
         Calling it manually may lead to connection leaks.
 
+        Implementations mya raise DatabaseNotInitializedError if this method is used before engine creation
+
         Returns:
             A SQLModel Session object.
         """

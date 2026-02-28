@@ -246,6 +246,7 @@ class TestErrorCases:
         """Session injection fails if no database provider in bot_data."""
         update = Update(update_id=1)
         ctx = TestContext()  # no database_provider
+        ctx.bot_data.database_provider = None
         scope = RequestScope(update, ctx)
         resolver = DependencyResolver(container)
 

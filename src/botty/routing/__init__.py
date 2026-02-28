@@ -7,6 +7,8 @@ from .registry import MessageRegistry
 from .response_processor import ResponseProcessor
 from .router import Router
 from .validation import is_valid_handler, validate_handler
+from .dispatcher import ConversationDispatcher
+from .conversation import Conversation, ConversationRegistry, step, entry, error, cancel
 
 __all__ = [
     "Router",
@@ -15,4 +17,11 @@ __all__ = [
     "ResponseProcessor",
     "validate_handler",
     "is_valid_handler",
+    "ConversationDispatcher",
+    "Conversation",
+    "step",
+    "entry",
+    "error",
+    "cancel",
+    "ConversationRegistry",
 ]

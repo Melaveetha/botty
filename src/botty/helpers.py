@@ -1,4 +1,4 @@
-from typing import Annotated, TypeAlias
+from typing import Annotated, TypeAlias, Any
 
 from .context import ContextProtocol
 from .di import Depends
@@ -20,6 +20,7 @@ from .exceptions import (
     PollAnswerNotFound,
     PollNotFound,
     EffectiveMessageNotFound,
+    ConversationStateNotFound,
 )
 
 
@@ -33,7 +34,9 @@ InjectableUser: TypeAlias = Annotated[EffectiveUser, Depends(_get_effective_user
 """Type hint for injecting the effective user.
 
 Use this annotation in handler parameters to get the user object.
-Raises EffectiveUserNotFound if the update lacks a user.
+
+Raises:
+    EffectiveUserNotFound if the update lacks a user.
 
 Example:
     ```python
@@ -53,7 +56,9 @@ InjectableChat: TypeAlias = Annotated[EffectiveChat, Depends(_get_effective_chat
 """Type hint for injecting the effective chat.
 
 Use this annotation in handler parameters to get the chat object.
-Raises EffectiveChatNotFound if the update lacks a chat.
+
+Raises:
+    EffectiveChatNotFound if the update lacks a chat.
 
 Example:
     ```python
@@ -77,7 +82,9 @@ InjectableMessage: TypeAlias = Annotated[
 """Type hint for injecting the effective message.
 
 Use this annotation in handler parameters to get the message object.
-Raises EffectiveMessageNotFound if the update lacks a message.
+
+Raises:
+    EffectiveMessageNotFound if the update lacks a message.
 
 Example:
     ```python
@@ -99,7 +106,9 @@ InjectableCallbackQuery: TypeAlias = Annotated[
 """Type hint for injecting the callback query.
 
 Use this annotation in handler parameters to get the callback query object.
-Raises CallbackQueryNotFound if the update lacks a callback query.
+
+Raises:
+    CallbackQueryNotFound if the update lacks a callback query.
 
 Example:
     ```python
@@ -121,7 +130,9 @@ InjectableEditedMessage: TypeAlias = Annotated[
 """Type hint for injecting the edited message.
 
 Use this annotation in handler parameters to get the edited message object.
-Raises EditedMessageNotFound if the update lacks a edited message.
+
+Raises:
+    EditedMessageNotFound if the update lacks a edited message.
 
 Example:
     ```python
@@ -141,7 +152,9 @@ InjectablePoll: TypeAlias = Annotated[Poll, Depends(_get_poll)]
 """Type hint for injecting the poll.
 
 Use this annotation in handler parameters to get the pool object.
-Raises PollNotFound if the update lacks a pool.
+
+Raises:
+    PollNotFound if the update lacks a pool.
 
 Example:
     ```python
@@ -161,7 +174,9 @@ InjectablePollAnswer: TypeAlias = Annotated[PollAnswer, Depends(_get_poll_answer
 """Type hint for injecting the poll answer.
 
 Use this annotation in handler parameters to get the pool answer object.
-Raises PollAnswerNotFound if the update lacks a pool answer.
+
+Raises:
+    PollAnswerNotFound if the update lacks a pool answer.
 
 Example:
     ```python
@@ -169,6 +184,31 @@ Example:
         print(poll_answer.id)
     ```
 """
+
+
+def _get_conversation_state(update: Update, context: ContextProtocol) -> dict[str, Any]:
+    if context.user_data.conversation_data is None:
+        raise ConversationStateNotFound()
+    return context.user_data.conversation_data.state
+
+
+ConversationState: TypeAlias = Annotated[
+    dict[str, Any], Depends(_get_conversation_state)
+]
+"""Type hint for injecting the conversation state.
+
+Use this annotation in conversation steps parameters to get the conversation state object.
+
+Raises:
+    ConversationStateNotFound if the is no active conversation.
+
+Example:
+    ```python
+    async def handler(..., state: ConversationState):
+        print(state["name"])
+    ```
+"""
+
 
 # TODO: support for inline queries
 
@@ -180,4 +220,5 @@ __all__ = [
     InjectableEditedMessage,
     InjectablePoll,
     InjectablePollAnswer,
+    ConversationState,
 ]

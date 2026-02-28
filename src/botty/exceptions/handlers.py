@@ -69,3 +69,10 @@ class PollAnswerNotFound(BottyError):
 
     def __init__(self, message: str | None = None):
         super().__init__(message=message or "Poll answer was not found")
+
+
+class ConversationStateNotFound(BottyError):
+    """Raised when conversation is not started, but `ConversationState` is used as dependency"""
+
+    def __init__(self, message: str | None = None):
+        super().__init__(message=message or "Conversation was not started")

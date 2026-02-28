@@ -1,6 +1,6 @@
 from sqlmodel import Session, SQLModel, create_engine
 
-from botty.database import DatabaseProvider
+from ..database import DatabaseProvider
 
 
 class TestDatabaseProvider(DatabaseProvider):

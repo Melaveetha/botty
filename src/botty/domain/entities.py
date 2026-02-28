@@ -7,15 +7,11 @@ from telegram import PollOption
 from ..exceptions import ChatIdNotFoundError
 
 
+@dataclass
 class Message:
     message_id: int
     chat_id: int
     date: datetime
-
-    def __init__(self, message_id: int, chat_id: int, date: datetime):
-        self.message_id = message_id
-        self.chat_id = chat_id
-        self.date = date
 
     @staticmethod
     def from_telegram(message: TGMessage) -> "Message":

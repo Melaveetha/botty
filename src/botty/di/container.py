@@ -27,6 +27,7 @@ class DependencyContainer:
         Context: lambda scope: scope.context,
         ContextProtocol: lambda scope: scope.context,
         Session: lambda scope: scope.session,
+        Exception: lambda scope: scope.exception,
     }
 
     def __init__(self):

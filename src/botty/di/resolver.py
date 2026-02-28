@@ -1,3 +1,5 @@
+from types import MethodType
+from collections.abc import Callable
 import inspect
 from typing import Any
 
@@ -44,13 +46,52 @@ class DependencyResolver:
                                        or if a required database dependency
                                        is requested but no provider is set.
         """
-        sig = inspect.signature(handler)
-        type_hints = inspect.get_annotations(handler)
+        return await self._resolve_callable(handler, scope, skip_params=0)
+
+    async def resolve_bound_method(
+        self,
+        method: MethodType,
+        instance: Any,
+        scope: RequestScope,
+    ) -> dict[str, Any]:
+        """Resolve all dependencies for a bound method.
+
+        Args:
+            method: The handler function (async generator) to resolve.
+            instance: Conversation instance owning the method
+            scope: The current request scope.
+
+        Returns:
+            A dictionary mapping parameter names to resolved values, ready
+            to be passed to the handler.
+
+        Raises:
+            DependencyResolutionError: If any parameter cannot be resolved,
+                                       or if a required database dependency
+                                       is requested but no provider is set.
+        """
+        unbound = method.__func__
+        handler_name = f"{instance.__class__.__name__}.{method.__name__}"
+        return await self._resolve_callable(
+            unbound, scope, skip_params=1, handler_name=handler_name
+        )
+
+    async def _resolve_callable(
+        self,
+        func: Callable,
+        scope: RequestScope,
+        skip_params: int = 0,
+        handler_name: str | None = None,
+    ) -> dict[str, Any]:
+        sig = inspect.signature(func)
+        type_hints = inspect.get_annotations(func)
+
+        if handler_name is None:
+            handler_name = getattr(func, "__name__") or "unknown"
 
         kwargs = {}
-        handler_name = handler.__name__
 
-        for param_name, param in sig.parameters.items():
+        for param_name, param in list(sig.parameters.items())[skip_params:]:
             annotation = type_hints.get(param_name)
 
             dep = _extract_depends(annotation)

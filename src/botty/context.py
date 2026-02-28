@@ -1,10 +1,11 @@
-from typing import TYPE_CHECKING, Protocol
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Protocol, Any
 from telegram.ext import CallbackContext, ExtBot, Application as TgApplication
 
 
 if TYPE_CHECKING:
     from .database import DatabaseProvider
-    from .routing import MessageRegistry
+    from .routing import MessageRegistry, ConversationRegistry
     from .di import DependencyContainer
     from .ports import TelegramBotClient
 
@@ -23,6 +24,7 @@ class BotData:
     dependency_container: "DependencyContainer"
     database_provider: "DatabaseProvider | None"
     bot_client: "TelegramBotClient"
+    conversation_registry: "ConversationRegistry"
 
     def __init__(self):
         # TODO: add error when not properly initialized
@@ -30,9 +32,19 @@ class BotData:
         self.dependency_container = None  # type: ignore [invalid-assignment]
         self.database_provider = None
         self.bot_client = None  # type: ignore [invalid-assignment]
+        self.conversation_registry = None  # type: ignore [invalid-assignment]
+
+
+@dataclass
+class ConversationData:
+    class_name: str
+    step: str
+    state: dict[str, Any]
 
 
 class UserData:
+    conversation_data: ConversationData | None = None
+
     def __init__(self):
         pass
 
