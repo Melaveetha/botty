@@ -124,6 +124,9 @@ Dependencies can be cached within the same request (default) or recomputed each 
 ### Conversations
 Botty supports class‑based conversations for multi‑step interactions. Decorate methods with `@entry`, `@step`, `@cancel`, and `@error`.
 
+⚠️ Important
+Each step of a conversation receives a fresh instance of the conversation class. Do not rely on instance attributes to store data across steps. Use the injected ConversationState dictionary instead – it is automatically persisted and restored for every step.
+
 ```python
 from botty import Conversation, entry, step, cancel, error, ConversationState
 

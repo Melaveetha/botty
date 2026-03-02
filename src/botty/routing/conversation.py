@@ -11,7 +11,14 @@ from ..context import ContextProtocol
 
 
 class Conversation:
-    """Base class for all conversations. Provides helper methods."""
+    """Base class for all conversations. Provides helper methods.
+
+    Each step of a conversation receives a **fresh** instance
+    of the conversation class. Do not rely on instance attributes
+    to store data across steps. Use the injected ConversationState
+    dictionary instead – it is automatically persisted
+    and restored for every step.
+    """
 
     _cancel_command: str = "cancel"
 

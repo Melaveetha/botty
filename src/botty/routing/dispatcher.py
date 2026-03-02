@@ -113,8 +113,9 @@ class ConversationDispatcher(BaseHandler[PTBUpdate, Context, None]):
                 )
             except Exception as e:
                 logger.error(
-                    f"Error during error_step processing for conversation `{conversation_class.__name__}`. Error method is `{error_step}`"
-                    f".\nError: {e}\n\nThis error occurred during handling following error: {e}"
+                    f"Error during error_step processing for conversation `{conversation_class.__name__}`."
+                    f"Error method is `{error_step}`."
+                    f"\n\nThis error occurred during handling following error: {e}"
                 )
                 context.user_data.conversation_data = None
         raise ApplicationHandlerStop()

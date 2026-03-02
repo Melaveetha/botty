@@ -31,11 +31,11 @@ class BotData:
 
     def __init__(self):
         # TODO: add error when not properly initialized
-        self.message_registry = None  # type: ignore [invalid-assignment]
-        self.dependency_container = None  # type: ignore [invalid-assignment]
+        self.message_registry = None  # ty: ignore [invalid-assignment]
+        self.dependency_container = None  # ty: ignore [invalid-assignment]
         self.database_provider = None
-        self.bot_client = None  # type: ignore [invalid-assignment]
-        self.conversation_registry = None  # type: ignore [invalid-assignment]
+        self.bot_client = None  # ty: ignore [invalid-assignment]
+        self.conversation_registry = None  # ty: ignore [invalid-assignment]
         self.middlewares = []
         self.exception_handlers = []
 
