@@ -19,11 +19,28 @@ class Depends:
 
     Example:
         ```python
-        async def get_current_user(user_repo: UserRepository) -> User:
+        # Simple dependency
+        async def get_db_session(update: Update, context: Context) -> Session:
             ...
 
-        CurrentUser = Annotated[User, Depends(get_current_user)]
+        # Nested dependency: get_current_user depends on get_db_session
+        async def get_current_user(..., session: Annotated[Session, Depends(get_db_session)]) -> User:
+            ...
+
+        # Use in handler
+        @router.command("profile")
+        async def profile_handler(
+            update: Update,
+            context: Context,
+            user: Annotated[User, Depends(get_current_user)]
+        ) -> HandlerResponse:
+            yield Answer(f"Hello {user.name}!")
         ```
+
+    When `use_cache=True` (default), the same User instance will be injected
+    everywhere `get_current_user` is requested within the same request scope.
+    Set `use_cache=False` if you need a fresh value each time (e.g., a random
+    number or timestamp).
     """
 
     def __init__(self, dependency: Dependency, *, use_cache: bool = True):

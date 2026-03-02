@@ -2,13 +2,13 @@ from typing import Any
 
 from sqlmodel import Session
 
-from botty import Depends, Update
-from botty.context import ContextProtocol
-from botty.di import Dependency, RequestScope
-from botty.ports import TelegramBotClient
-from botty.routing import MessageRegistry
-from botty.testing.bot_client import TestBotClient
-from botty.testing.registry import TestMessageRegistry
+from ..domain import Update
+from ..context import ContextProtocol
+from ..di import Dependency, Depends, RequestScope
+from ..ports import TelegramBotClient
+from ..routing import MessageRegistry
+from .bot_client import TestBotClient
+from .registry import TestMessageRegistry
 
 
 class TestRequestScope(RequestScope):

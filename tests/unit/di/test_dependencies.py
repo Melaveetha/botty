@@ -246,6 +246,7 @@ class TestErrorCases:
         """Session injection fails if no database provider in bot_data."""
         update = Update(update_id=1)
         ctx = TestContext()  # no database_provider
+        ctx.bot_data.database_provider = None
         scope = RequestScope(update, ctx)
         resolver = DependencyResolver(container)
 
@@ -267,7 +268,7 @@ class TestErrorCases:
             await resolver.resolve_handler(bad_handler, request_scope)  # ty: ignore [invalid-argument-type]
 
     async def test_depends_with_none_dependency_raises(self, container, request_scope):
-        dep = Depends(None)  # type: ignore
+        dep = Depends(None)  # ty: ignore
         with pytest.raises(DependencyResolutionError) as exc:
             await container.resolve_dependency(dep, request_scope, [])
         assert "dependency function not provided" in str(exc.value).lower()

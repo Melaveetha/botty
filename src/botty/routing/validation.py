@@ -5,18 +5,20 @@ Validates handler functions to ensure they match the expected signature
 and provides helpful error messages for common mistakes.
 """
 
-from collections.abc import AsyncGenerator
-from botty.di import Handler
-
 import inspect
-from typing import Any, get_type_hints
+from collections.abc import AsyncGenerator
+from typing import get_type_hints
 
 from loguru import logger
 
-from ..exceptions import InvalidHandlerError
+from ..di import Handler
+from ..exceptions import InvalidConversationError, InvalidHandlerError
+from .conversation import Conversation, iterate_steps
 
 
-def validate_handler(func: Handler, handler_type: str = "command") -> None:
+def validate_handler(
+    func: Handler, handler_type: str = "command", skip_params: int = 0
+) -> None:
     """
     Validate that a function matches the handler protocol.
 
@@ -48,7 +50,7 @@ def validate_handler(func: Handler, handler_type: str = "command") -> None:
     params = list(sig.parameters.keys())
 
     # Must have at least update and context
-    if len(params) < 2:
+    if len(params) < skip_params + 2:
         raise InvalidHandlerError(
             handler_name=func_name,
             reason="Handler must accept at least 'update' and 'context' parameters",
@@ -56,12 +58,12 @@ def validate_handler(func: Handler, handler_type: str = "command") -> None:
         )
 
     # First two params should be update and context
-    if params[0] not in ("update", "_update"):
+    if params[skip_params] not in ("update", "_update"):
         logger.warning(
             f"Handler '{func_name}': First parameter '{params[0]}' should be named 'update'"
         )
 
-    if params[1] not in ("context", "ctx", "_context"):
+    if params[skip_params + 1] not in ("context", "ctx", "_context"):
         logger.warning(
             f"Handler '{func_name}': Second parameter '{params[1]}' should be named 'context'"
         )
@@ -107,30 +109,68 @@ def is_valid_handler(func: Handler, silent: bool = True) -> bool:
         return False
 
 
-def validate_handler_return_type(obj: Any, handler_name: str) -> None:
+def validate_exactly_one(
+    cls: type[Conversation], attr_name: str, decorator_name: str
+) -> str:
     """
-    Validate that a handler returns the correct type at runtime.
+    Validate that a class has exactly one method with attribute `attr_name`.
 
     This is called during handler execution to catch cases where
     a handler returns something unexpected.
 
     Args:
-        obj: Object returned by handler
-        handler_name: Name of handler for error messages
+        cls: Class that would be checked
+        attr_name: Attribute name
+        decorator_name: Name of decorator, that sets this attribute (for error message)
+
+    Returns:
+        Name of the matched method
 
     Raises:
-        InvalidHandlerError: If return type is invalid
+        InvalidConversationError: If cls has zero or more than one method with `attr_name`
     """
-    if not inspect.isasyncgen(obj):
-        raise InvalidHandlerError(
-            handler_name=handler_name,
-            reason=(
-                f"Handler returned {type(obj).__name__} instead of async generator. "
-                f"Did you forget to use 'yield'?"
-            ),
+    matched_methods = []
+    for name, method in iterate_steps(cls):
+        if getattr(method, attr_name, False):
+            matched_methods.append(name)
+    if len(matched_methods) != 1:
+        raise InvalidConversationError(
+            message=f"Conversation class '{cls.__name__}' must have exactly one method decorated with @{decorator_name}",
+            class_name=cls.__name__,
             suggestion=(
-                f"Handler '{handler_name}' should yield Answer objects:\n"
-                f"  async def {handler_name}(...):\n"
-                f"      yield Answer(text='Hello!')  # ← Use yield, not return"
+                f"Add exactly one @{decorator_name} decorator to a method in {cls.__name__}. "
+                f"Found {len(matched_methods)} methods: {', '.join(matched_methods)}"
+            ),
+        )
+    return matched_methods[0]
+
+
+def validate_at_most_one(
+    cls: type[Conversation], attr_name: str, decorator_name: str
+) -> None:
+    """
+    Validate that a class has exactly one method with attribute `attr_name`.
+
+    This is called during handler execution to catch cases where
+    a handler returns something unexpected.
+
+    Args:
+        cls: Class that would be checked
+        attr_name: Attribute name
+        decorator_name: Name of decorator, that sets this attribute (for error message)
+
+    Raises:
+        InvalidConversationError: If cls has more than one method with `attr_name`
+    """
+    matched_methods = []
+    for name, method in iterate_steps(cls):
+        if getattr(method, attr_name, False):
+            matched_methods.append(name)
+    if len(matched_methods) > 1:
+        raise InvalidConversationError(
+            message=f"Conversation class '{cls.__name__}' must have at most one method decorated with @{decorator_name}",
+            class_name=cls.__name__,
+            suggestion=(
+                f"Remove extra @{decorator_name} decorators. Found {len(matched_methods)} methods: {', '.join(matched_methods)}"
             ),
         )

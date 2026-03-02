@@ -1,5 +1,6 @@
+from types import MethodType
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from telegram import Message as TGMessage
 from telegram import PollOption
@@ -7,15 +8,11 @@ from telegram import PollOption
 from ..exceptions import ChatIdNotFoundError
 
 
+@dataclass
 class Message:
     message_id: int
     chat_id: int
     date: datetime
-
-    def __init__(self, message_id: int, chat_id: int, date: datetime):
-        self.message_id = message_id
-        self.chat_id = chat_id
-        self.date = date
 
     @staticmethod
     def from_telegram(message: TGMessage) -> "Message":
@@ -40,6 +37,93 @@ class EffectiveChat:
 
 
 @dataclass
+class PhotoSize:
+    """Telegram photo size."""
+
+    file_id: str
+    file_unique_id: str
+    width: int
+    height: int
+    file_size: int | None = None
+
+
+@dataclass
+class Document:
+    """Telegram document."""
+
+    file_id: str
+    file_unique_id: str
+    file_name: str | None = None
+    mime_type: str | None = None
+    file_size: int | None = None
+    thumbnail: PhotoSize | None = None
+
+
+@dataclass
+class Video:
+    """Telegram video."""
+
+    file_id: str
+    file_unique_id: str
+    width: int
+    height: int
+    duration: int | timedelta
+    thumbnail: PhotoSize | None = None
+    file_name: str | None = None
+    mime_type: str | None = None
+    file_size: int | None = None
+
+
+@dataclass
+class Audio:
+    """Telegram audio file."""
+
+    file_id: str
+    file_unique_id: str
+    duration: int | timedelta
+    performer: str | None = None
+    title: str | None = None
+    file_name: str | None = None
+    mime_type: str | None = None
+    file_size: int | None = None
+    thumbnail: PhotoSize | None = None
+
+
+@dataclass
+class Voice:
+    """Telegram voice message."""
+
+    file_id: str
+    file_unique_id: str
+    duration: int | timedelta
+    mime_type: str | None = None
+    file_size: int | None = None
+
+
+@dataclass
+class Location:
+    """Telegram location."""
+
+    longitude: float
+    latitude: float
+    horizontal_accuracy: float | None = None
+    live_period: int | timedelta | None = None
+    heading: int | None = None
+    proximity_alert_radius: int | None = None
+
+
+@dataclass
+class Contact:
+    """Telegram contact."""
+
+    phone_number: str
+    first_name: str
+    last_name: str | None = None
+    user_id: int | None = None
+    vcard: str | None = None
+
+
+@dataclass
 class EffectiveMessage:
     """Represents a message with text, ignoring advanced media fields."""
 
@@ -47,6 +131,13 @@ class EffectiveMessage:
     chat_id: int
     date: datetime
     text: str | None
+    photo: list[PhotoSize] | None = None
+    document: Document | None = None
+    video: Video | None = None
+    audio: Audio | None = None
+    voice: Voice | None = None
+    location: Location | None = None
+    contact: Contact | None = None
 
 
 @dataclass
@@ -58,6 +149,15 @@ class CallbackQuery:
     user_id: int
     message_id: int | None
     chat_id: int | None
+    _answer: MethodType
+
+    async def answer(
+        self,
+        text: str | None = None,
+        show_alert: bool | None = None,
+        url: str | None = None,
+    ):
+        return await self._answer(text, show_alert, url)
 
 
 @dataclass

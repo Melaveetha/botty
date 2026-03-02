@@ -81,7 +81,7 @@ async def empty_handler(
     update: Update, context: Context
 ) -> AsyncGenerator[BaseAnswer, None]:
     """Handler that yields EmptyAnswer (should not send a message)."""
-    yield EmptyAnswer(text="test")
+    yield EmptyAnswer()
 
 
 # -------------------------------------------------------------------

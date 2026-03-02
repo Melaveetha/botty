@@ -1,12 +1,15 @@
-from loguru import logger
 from pathlib import Path
 from typing import Self
 
+from loguru import logger
 
 from ..database import DatabaseProvider
+from ..di import HandlerProtocol
 from ..exceptions import ConfigurationError
+from ..middleware import Middleware
 from ..routing import Router, discover_routers
 from .runner import Application
+from .webhook import WebhookConfig
 
 
 class AppBuilder:
@@ -32,6 +35,9 @@ class AppBuilder:
         self._routers: list[Router] = []
         self._database_provider: DatabaseProvider | None = None
         self._discovery: bool = True
+        self._webhook: WebhookConfig | None = None
+        self._middlewares: list[Middleware] = []
+        self._exception_handlers: list[tuple[type[Exception], HandlerProtocol]] = []
 
     def token(self, token: str) -> Self:
         """Set the bot token obtained from @BotFather.
@@ -57,6 +63,24 @@ class AppBuilder:
         self._database_provider = provider
         return self
 
+    def webhook(self, webhook: WebhookConfig) -> Self:
+        """Configure the bot to run in webhook mode.
+
+        Args:
+            url: Public HTTPS URL where Telegram will send updates (e.g., "https://example.com/webhook").
+            port: Local port to listen on (default 8443).
+            listen: IP address to bind (default "0.0.0.0").
+            path: URL path that will receive updates (default "/").
+            secret_token: Optional secret to verify incoming requests (recommended).
+            cert: Path to SSL certificate file if using a self‑signed certificate.
+            key: Path to private key file (required if cert is provided).
+
+        Returns:
+            The builder instance for chaining.
+        """
+        self._webhook = webhook
+        return self
+
     def handlers_directory(self, path: str | Path) -> Self:
         """Set a custom directory for automatic router discovery.
 
@@ -70,6 +94,49 @@ class AppBuilder:
             The builder instance for chaining.
         """
         self._handlers_dir = Path(path)
+        return self
+
+    def add_exception_handler(
+        self, exc_class: type[Exception], handler: HandlerProtocol
+    ) -> Self:
+        """Register a global exception handler.
+
+        When an exception of type `exc_class` (or its subclass) is raised during
+        handler execution, the registered handler is called instead of propagating
+        the error. The exception object is automatically injected if the handler
+        has a parameter of type `Exception` (or any subclass).
+
+        Handlers are tried in order of registration.
+
+        Args:
+            exc_class: The exception class to handle (subclasses will also match).
+            handler: An async generator function (must match the Handler protocol).
+
+        Example:
+            ```python
+            async def handle_value_error(update, context, exc: ValueError):
+                yield Answer(f"Invalid input: {exc}")
+
+            builder.add_exception_handler(ValueError, handle_value_error)
+            ```
+        """
+        self._exception_handlers.append((exc_class, handler))
+        return self
+
+    def add_middleware(self, middleware: Middleware) -> Self:
+        """Add a single middleware.
+
+        Args:
+            middleware: A functions that receives update: Update, context: Context and generator: AsyncGenerator[BaseAnswer, None] and returns AsyncGenerator[BaseAnswer, None].
+
+        Returns:
+            The builder instance for chaining.
+        """
+        self._middlewares.append(middleware)
+        return self
+
+    def add_middlewares(self, middlewares: list[Middleware]) -> Self:
+        self._middlewares.extend(middlewares)
         return self
 
     def add_router(self, router: Router) -> Self:
@@ -129,4 +196,11 @@ class AppBuilder:
             )
         if self._discovery:
             self._routers.extend(discover_routers(self._handlers_dir))
-        return Application(self._token, self._database_provider, self._routers)
+        return Application(
+            self._token,
+            self._database_provider,
+            self._routers,
+            self._middlewares,
+            self._exception_handlers,
+            self._webhook,
+        )

@@ -30,7 +30,7 @@ Traditional Telegram bot frameworks require a lot of boilerplate and make it har
 - Write testable code (everything is tightly coupled)
 - Get type hints and IDE support
 
-**Botty uses** bringing FastAPI's best ideas to Telegram bots:
+**Botty uses** FastAPI's best ideas to Telegram bots:
 - **Dependency Injection** - Repositories and services are automatically injected
 - **Type Hints** - Full type safety with IDE autocomplete
 - **Async Generators** - Handlers yield responses, making sending and editing messages trivial
@@ -53,6 +53,10 @@ uv add botty-framework
 
 Botty automatically injects *repositories* and *services* just by type‑hinting them – no decorators, no `Depends()` boilerplate.
 
+1. **Automatic injection** – Any parameter whose type inherits from `BaseRepository` or `BaseService` is automatically provided.
+   - Repositories are **request‑scoped**: a new instance is created for each update, with an open database session.
+   - Services are **singletons**: the same instance is shared across all requests.
+
 ```python
 @router.command("profile")
 async def show_profile(
@@ -67,11 +71,30 @@ async def show_profile(
 
     yield Answer(f"👤 {user.name}\n⚙️ Theme: {settings.theme}")
 ```
+2. Explicit injection with `Depends` – For everything else, use `Annotated[T, Depends(...)]`. This gives you full control over caching, nested dependencies, and computed values.
+```python
+async def get_current_user(
+    update: Update, context: Context   # Nested works!
+) -> User:
+    ...
+
+CurrentUser: TypeAlias = Annotated[User, Depends(get_current_user)]
+
+@router.command("profile")
+async def profile_handler(
+    update: Update,
+    context: Context,
+    user: CurrentUser
+) -> HandlerResponse:
+    ...
+```
+
+Dependencies are cached per request by default; set use_cache=False to disable caching.
 
 What dependencies are generated?
 1. Any class that inherits from BaseRepository gets a request‑scoped instance with an open database session.
 2. Any class that inherits from BaseService is a singleton – shared across requests.
-3. Common objects like `Update`, `Context`, `Session`, `InjectableUser`, `InjectableChat`, `InjectableMessage`, and `CallbackQuery` are also injected automatically.
+3. Common objects like `Update`, `Context`, `Session`, `InjectableUser`, `InjectableChat`, `InjectableMessage`, and `InjectableCallbackQuery` are also injected automatically.
 
 ### Custom dependencies with `Depends`
 
@@ -98,9 +121,75 @@ async def profile_handler(
 ```
 Dependencies can be cached within the same request (default) or recomputed each time. They can also depend on other dependencies – the resolver handles the graph automatically.
 
+### Conversations
+Botty supports class‑based conversations for multi‑step interactions. Decorate methods with `@entry`, `@step`, `@cancel`, and `@error`.
+
+⚠️ Important
+Each step of a conversation receives a fresh instance of the conversation class. Do not rely on instance attributes to store data across steps. Use the injected ConversationState dictionary instead – it is automatically persisted and restored for every step.
+
+```python
+from botty import Conversation, entry, step, cancel, error, ConversationState
+
+@router.conversation("register")
+class RegistrationConversation(Conversation):
+    @entry
+    async def start(self, update: Update, context: Context) -> HandlerResponse:
+        yield Answer("Welcome! What's your name?")
+        self.step("ask_age")          # go to next step
+
+    @step
+    async def ask_age(
+        self,
+        update: Update,
+        context: Context,
+        state: ConversationState       # injected state
+    ) -> HandlerResponse:
+        name = update.message.text
+        state["name"] = name
+        yield Answer(f"Nice to meet you, {name}! How old are you?")
+        self.step("farewell")
+
+    @step
+    async def farewell(
+        self,
+        update: Update,
+        context: Context,
+        state: ConversationState
+    ) -> HandlerResponse:
+        state["age"] = update.message.text
+        yield Answer(f"Thank you! You are {state['age']} years old. Goodbye!")
+        self.end()                      # ends conversation
+
+    @cancel
+    async def on_cancel(self, update: Update, context: Context) -> HandlerResponse:
+        yield Answer("Registration cancelled.")
+        self.end()
+
+    @error
+    async def handle_error(
+        self,
+        update: Update,
+        context: Context,
+        exception: Exception
+    ) -> HandlerResponse:
+        yield Answer("Something went wrong. Please try again later.")
+        self.end()
+```
+
+- The cancel command defaults to `/cancel`. Override it in the decorator: `@router.conversation("register", cancel_command="stop")` (Note: no leading '/' for commands)
+- State is automatically saved in `context.user_data` and cleared when the conversation ends.
+- If you don’t define `@cancel` or `@error`, sensible defaults are used (they log and end the conversation).
+
+
 ### Message Registry & Smart Editing
 
-Track messages and edit them later by key, handler name, or automatically:
+Botty tracks every message you send in a registry (per chat, with a configurable limit). When you yield an `EditAnswer`, the framework decides which message to edit using this **priority order**:
+
+1. **Direct message ID** – if you set `EditAnswer(message_id=123)`.
+2. **Message key** – if you set `EditAnswer(message_key="my_key")`.
+3. **Handler name (explicit)** – if you set `EditAnswer(handler_name="other_handler")`, the most recent message from that handler is used.
+4. **Current handler** – the most recent message sent by the same handler.
+5. **Last message in chat** – fallback to the very last message sent in this chat.
 
 ```python
 @router.command("countdown")
@@ -122,6 +211,58 @@ async def countdown_handler(
     await asyncio.sleep(1)
     yield EditAnswer("GO! 🚀", message_key="countdown")
 ```
+
+You can also interact with the registry manually if needed:
+
+```python
+# Get a message by its key
+record = context.bot_data.message_registry.get_by_key("my_key")
+if record:
+    message_id = record.message_id
+
+# Get all messages from a handler
+records = context.bot_data.message_registry.get_by_handler("my_handler")
+```
+
+The registry is stored in `bot_data` and shared across all handlers. It automatically discards old messages when the per‑chat limit is reached (default 100).
+
+
+### Middleware
+
+Middleware lets you intercept and modify the response stream of every handler. A middleware is an async function that receives the `update`, `context`, and the inner generator, and returns an async generator that may yield its own responses.
+
+**Example – logging middleware:**
+
+```python
+from botty import Middleware
+
+async def logging_middleware(
+    update: Update,
+    context: Context,
+    inner: AsyncGenerator[BaseAnswer, None]
+) -> AsyncGenerator[BaseAnswer, None]:
+    print(f"Handler called for update {update.update_id}")
+    async for response in inner:
+        print(f"Yielding response: {response}")
+        yield response
+```
+
+**Registering middleware:**
+
+Use the builder to add one or more middlewares:
+```python
+app = (
+    AppBuilder()
+    .token("TOKEN")
+    .add_middleware(logging_middleware)
+    .add_middleware(auth_middleware)
+    .build()
+)
+```
+
+**Execution order**: Middlewares are applied in the order they are added, forming a stack. The first added becomes the outermost, so it runs first before the handler and last after the handler.
+
+**Short‑circuiting**: If a middleware yields a response without calling the inner generator, the handler is never executed.
 
 ### Clean Handler Syntax
 
@@ -173,12 +314,11 @@ class UserRepository(BaseRepository[User]): # Inheritance from BaseRepository al
 async def stats_handler(
     update: Update,
     context: Context,
-    user_repo: UserRepositoryDep
+    user_repo: UserRepository
 ) -> HandlerResponse:
     active = user_repo.get_active_users()
     yield Answer(f"📊 Active users: {len(active)}")
 ```
-
 
 ### Type Safety & Validation
 
@@ -215,6 +355,74 @@ app = (
     .build()
 )
 ```
+
+### Global Exception Handlers
+
+You can register handlers that are called when specific exceptions occur during request processing. This is useful for custom error messages or logging.
+
+```python
+from botty import Answer
+
+async def on_telegram_error(update, context, exc: TelegramError):
+    yield Answer("A Telegram API error occurred. Please try again later.")
+
+builder.add_exception_handler(TelegramError, on_telegram_error)
+```
+
+The exception is injected automatically if your handler declares a parameter with that type. Handlers are tried in registration order.
+
+### Testing
+
+Botty provides a comprehensive testing toolkit in `botty.testing` to unit‑test handlers and conversations without a real Telegram bot.
+
+**Key test doubles:**
+
+- `TestBotClient` – records sent messages instead of actually sending them.
+- `TestContext` – a mutable context you can pre‑configure.
+- `TestDatabaseProvider` – in‑memory SQLite database, isolated per test.
+- `TestDependencyContainer` – allows overriding dependencies with mocks.
+- `ConversationTester` – a helper to drive conversations step by step.
+
+**Example – testing a simple handler:**
+
+```python
+from botty.testing import TestContext, TestBotClient
+
+async def test_hello_handler(router):
+    ctx = TestContext()
+    ctx.bot_data.bot_client = TestBotClient()
+
+    # Simulate a /hello command
+    update = make_command_update("hello")
+    wrapper = router.handlers[0][2]   # get the wrapped handler
+    await wrapper(update, ctx)
+
+    assert len(ctx.bot_data.bot_client.sent) == 1
+    assert ctx.bot_data.bot_client.sent[0].answer.text == "Hello!"
+```
+
+**Testing conversations with** `ConversationTester`:
+
+```python
+from botty.testing import ConversationTester
+
+async def test_registration_flow(router):
+    tester = ConversationTester(router, RegistrationConversation, "register")
+    await tester.start()
+    assert tester.current_step == "ask_age"
+    assert tester.last_responses[0].answer.text == "Welcome! What's your name?"
+
+    await tester.send_message("Alice")
+    assert tester.current_step == "farewell"
+    assert tester.conversation_data["name"] == "Alice"
+    assert tester.last_responses[0].answer.text == "Nice to meet you, Alice! How old are you?"
+
+    await tester.send_message("30")
+    assert tester.current_step is None  # conversation ended
+    assert "30" in tester.last_responses[0].answer.text
+```
+
+The ConversationTester also supports dependency overrides, direct step execution, and callback queries.
 
 ## 🎨 Inspirations
 
@@ -259,6 +467,13 @@ todo_bot/
 └── pyproject.toml
 ```
 
+- The directory must be a **Python package** (contain an `__init__.py` file).
+- Each `.py` file inside (except `__init__.py`) may define a `Router` instance (usually named `router`).
+- The router will be picked up and registered with the application.
+- You can override the default path using `.handlers_directory("/custom/path")` on the builder.
+
+If you prefer explicit registration, disable discovery with `.manual_routes()` and use `.add_router(...)`.
+
 ### Implementation
 
 Here's a full todo bot showing all features:
@@ -277,7 +492,6 @@ from botty import (
     EditAnswer,
     SQLiteProvider,
     Update,
-    Depends
 )
 
 # ============================================================================
@@ -368,7 +582,7 @@ async def add_todo_handler(
 async def list_todos_handler(
     update: Update,
     context: Context,
-    todo_repo: TodoRepositoryDep,  # Auto-injected!
+    todo_repo: TodoRepository,  # Auto-injected!
     effective_user: InjectableUser
 ) -> HandlerResponse:
     """List all todos."""
@@ -407,7 +621,7 @@ async def list_todos_handler(
 async def pending_todos_handler(
     update: Update,
     context: Context,
-    todo_repo: TodoRepositoryDep,  # Auto-injected!
+    todo_repo: TodoRepository,  # Auto-injected!
     effective_user: InjectableUser
 ) -> HandlerResponse:
     """List incomplete todos."""
@@ -428,12 +642,12 @@ async def pending_todos_handler(
 async def toggle_todo_handler(
     update: Update,
     context: Context,
-    todo_repo: TodoRepositoryDep,  # Auto-injected!
-    callback_query: CallbackQuery,
+    todo_repo: TodoRepository,  # Auto-injected!
+    callback_query: InjectableCallbackQuery,
     effective_user: InjectableUser
 ) -> HandlerResponse:
     """Toggle todo completion."""
-    await query.answer()
+    await callback_query.answer()
 
     # Extract todo ID from callback data
     todo_id = int(query.data.split("_")[1])
@@ -536,10 +750,8 @@ MIT License - see LICENSE file for details
 ## 🗺️ Roadmap
 
 - [ ] More database providers (PostgreSQL, MySQL, NoDatabase)
-- [ ] Conversation state management
 - [ ] Admin panel
 - [ ] CLI for scaffolding projects
-- [ ] Built-in middleware support
 - [ ] Metrics and monitoring
 - [ ] Plugin system
 

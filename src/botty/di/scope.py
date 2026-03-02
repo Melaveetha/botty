@@ -24,7 +24,12 @@ class RequestScope:
         cache: Dict storing cached dependency results.
     """
 
-    def __init__(self, update: Update, context: ContextProtocol):
+    def __init__(
+        self,
+        update: Update,
+        context: ContextProtocol,
+        exception: Exception | None = None,
+    ):
         """Initialize the scope with update and context.
 
         Args:
@@ -33,6 +38,7 @@ class RequestScope:
         """
         self.update = update
         self.context = context
+        self.exception = exception
         self.cache: dict = {}
         self._session: Session | None = None
         self._session_closed = False

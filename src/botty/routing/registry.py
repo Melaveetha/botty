@@ -241,12 +241,12 @@ class MessageRegistry:
     ) -> int | None:
         """Determine which message ID to edit based on the EditAnswer criteria.
 
-        Priority order:
-        1. Direct message_id from answer.
-        2. Lookup by message_key.
-        3. Handler name specified in answer.
-        4. Last message from current handler.
-        5. Last message in chat (fallback).
+        Priority order (first match to go):
+        1. **Direct message_id** - If `answer.message_id` is provided, that ID is used.
+        2. **Message key** - If `answer.message_key` is given, the registry looks up the key.
+        3. **Handler name (explicit)**  - If `answer.handler_name` is set, the most recent message from that handler in this chat is used.
+        4. **Current handler** - The most recent message sent by the currently executing handler (`handler_name`) in this chat.
+        5. **Last message in chat (fallback)** - The most recent message sent in this chat, regardless of handler.
 
         Args:
             answer: The EditAnswer containing editing hints.

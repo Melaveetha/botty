@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from botty.domain import Message
-from botty.ports import TelegramBotClient
-from botty.responses import BaseAnswer, EditAnswer
+from ..domain import Message
+from ..ports import TelegramBotClient
+from ..responses import BaseAnswer, EditAnswer
 
 
 @dataclass

@@ -1,0 +1,15 @@
+[project]
+name = "survey-bot"
+version = "1.0.0"
+description = "Example Botty conversation bot"
+readme = "README.md"
+requires-python = ">=3.11"
+
+dependencies = [
+    "botty-framework>=0.0.3",
+    "loguru>=0.7.0",
+]
+
+
+[tool.uv.sources]
+botty-framework = { workspace = true }

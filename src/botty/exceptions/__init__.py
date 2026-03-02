@@ -19,10 +19,12 @@ from .handlers import (
     InvalidHandlerError,
     PollAnswerNotFound,
     PollNotFound,
+    ConversationStateNotFound,
 )
 from .registry import ChatIdNotFoundError
 from .repository import RepositoryOperationError
 from .responses import ResponseProcessingError
+from .conversations import InvalidConversationError
 
 __all__ = [
     "BottyError",
@@ -42,4 +44,6 @@ __all__ = [
     "EditedMessageNotFound",
     "PollNotFound",
     "PollAnswerNotFound",
+    "InvalidConversationError",
+    "ConversationStateNotFound",
 ]

@@ -1,6 +1,6 @@
 from typing import Any
 
-from botty.di import Dependency, DependencyContainer, Depends, RequestScope
+from ..di import Dependency, DependencyContainer, Depends, RequestScope
 
 
 class TestDependencyContainer(DependencyContainer):

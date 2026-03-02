@@ -79,6 +79,7 @@ async def help_command(update: Update, context: Context) -> HandlerResponse:
 <b>Other:</b>
 /help - Show this help message
 /about - About this bot
+/profile - Your profile
 
 <b>💡 Tips:</b>
 • Add #tags to organize: <code>/new Buy milk #shopping</code>
