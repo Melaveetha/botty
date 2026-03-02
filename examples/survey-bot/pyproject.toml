@@ -1,14 +1,13 @@
 [project]
-name = "task-manager-bot"
+name = "survey-bot"
 version = "1.0.0"
-description = "A personal task manager Telegram bot built with Botty framework"
+description = "Example Botty conversation bot"
 readme = "README.md"
 requires-python = ">=3.11"
 
 dependencies = [
     "botty-framework>=0.0.3",
     "loguru>=0.7.0",
-    "python-dotenv>=1.0.0",
 ]
 
 
