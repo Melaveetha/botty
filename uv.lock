@@ -9,6 +9,8 @@ resolution-markers = [
 [manifest]
 members = [
     "botty-framework",
+    "media-master-bot",
+    "survey-bot",
     "task-manager-bot",
 ]
 
@@ -35,7 +37,7 @@ wheels = [
 
 [[package]]
 name = "botty-framework"
-version = "0.0.1"
+version = "0.0.3"
 source = { editable = "." }
 dependencies = [
     { name = "loguru" },
@@ -295,6 +297,23 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/3a/05/a1dae3dffd1116099471c643b8924f5aa6524411dc6c63fdae648c4f1aca/loguru-0.7.3.tar.gz", hash = "sha256:19480589e77d47b8d85b2c827ad95d49bf31b0dcde16593892eb51dd18706eb6", size = 63559, upload-time = "2024-12-06T11:20:56.608Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/0c/29/0348de65b8cc732daa3e33e67806420b2ae89bdce2b04af740289c5c6c8c/loguru-0.7.3-py3-none-any.whl", hash = "sha256:31a33c10c8e1e10422bfd431aeb5d351c7cf7fa671e3c4df004162264b28220c", size = 61595, upload-time = "2024-12-06T11:20:54.538Z" },
+]
+
+[[package]]
+name = "media-master-bot"
+version = "0.1.0"
+source = { virtual = "examples/media-master-bot" }
+dependencies = [
+    { name = "botty-framework" },
+    { name = "loguru" },
+    { name = "python-dotenv" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "botty-framework", editable = "." },
+    { name = "loguru", specifier = ">=0.7.3" },
+    { name = "python-dotenv", specifier = ">=1.2.1" },
 ]
 
 [[package]]
@@ -612,6 +631,21 @@ wheels = [
 ]
 
 [[package]]
+name = "survey-bot"
+version = "1.0.0"
+source = { virtual = "examples/survey-bot" }
+dependencies = [
+    { name = "botty-framework" },
+    { name = "loguru" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "botty-framework", editable = "." },
+    { name = "loguru", specifier = ">=0.7.0" },
+]
+
+[[package]]
 name = "task-manager-bot"
 version = "1.0.0"
 source = { virtual = "examples/task-manager-bot" }
@@ -619,8 +653,6 @@ dependencies = [
     { name = "botty-framework" },
     { name = "loguru" },
     { name = "python-dotenv" },
-    { name = "python-telegram-bot" },
-    { name = "sqlmodel" },
 ]
 
 [package.metadata]
@@ -628,8 +660,6 @@ requires-dist = [
     { name = "botty-framework", editable = "." },
     { name = "loguru", specifier = ">=0.7.0" },
     { name = "python-dotenv", specifier = ">=1.0.0" },
-    { name = "python-telegram-bot", specifier = ">=21.0" },
-    { name = "sqlmodel", specifier = ">=0.0.14" },
 ]
 
 [[package]]

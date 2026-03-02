@@ -223,13 +223,13 @@ async def test_normal_conversation_flow(router, test_context):
     await tester.start()
     assert tester.current_step == "ask_age"
     assert len(tester.last_responses) == 1
-    assert tester.last_responses[0].answer.text == "What's your name?"
+    assert tester.last_responses[0].answer.text == "What's your name?"  # ty: ignore
 
     # First reply
     await tester.send_message("Alice")
     assert tester.current_step == "farewell"
     assert tester.conversation_data["name"] == "Alice"
-    assert tester.last_responses[0].answer.text == "Hello Alice, how old are you?"
+    assert tester.last_responses[0].answer.text == "Hello Alice, how old are you?"  # ty: ignore
 
     # Second reply
     await tester.send_message("30")
@@ -281,7 +281,7 @@ async def test_cancel_command(router, test_context):
     await tester.cancel()  # uses "stop"
     assert tester.current_step is None
     assert len(tester.last_responses) == 1
-    assert tester.last_responses[0].answer.text == "Conversation canceled"
+    assert tester.last_responses[0].answer.text == "Canceled!"
 
 
 @pytest.mark.asyncio
@@ -304,7 +304,7 @@ async def test_default_cancel_handler(router, test_context):
     await tester.start()
     await tester.cancel()  # uses default "cancel"
     assert tester.current_step is None
-    assert "Conversation canceled" in tester.last_responses[0].answer.text
+    assert "Conversation canceled" in tester.last_responses[0].answer.text  # ty: ignore
 
 
 @pytest.mark.asyncio
@@ -328,7 +328,7 @@ async def test_dependency_injection_in_step(router, test_context):
 
     tester = ConversationTester(router, TestDeps, "deps", context=test_context)
     await tester.start()
-    assert tester.last_responses[0].answer.text == "repo=fake_repo"
+    assert tester.last_responses[0].answer.text == "repo=fake_repo"  # ty: ignore
 
 
 @pytest.mark.asyncio

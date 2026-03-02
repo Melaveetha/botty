@@ -1,5 +1,7 @@
+import inspect
+from types import MethodType
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Callable, Generator
 from loguru import logger
 
 from ..responses import Answer
@@ -160,6 +162,16 @@ def cancel[F: Callable[..., Any]](method: F) -> F:
     method._is_step = True
     method._is_cancel = True
     return method
+
+
+def iterate_steps(
+    cls: Conversation | type[Conversation],
+) -> Generator[tuple[str, MethodType]]:
+    for name, method in inspect.getmembers(
+        cls,
+        predicate=lambda item: getattr(item, "_is_step", False),
+    ):
+        yield name, method
 
 
 class ConversationRegistry:

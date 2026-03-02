@@ -1,4 +1,19 @@
-from telegram import Update as PTBUpdate
+from telegram import (
+    Audio as PTBAudio,
+)
+from telegram import (
+    Document as PTBDocument,
+)
+from telegram import (
+    PhotoSize as PTBPhotoSize,
+)
+from telegram import (
+    Update as PTBUpdate,
+)
+from telegram import (
+    Video as PTBVideo,
+)
+from telegram import Voice as PTBVoice, Location as PTBLocation, Contact as PTBContact
 
 from ..domain import (
     CallbackQuery,
@@ -10,6 +25,110 @@ from ..domain import (
     PollAnswer,
     Update,
 )
+from ..domain.entities import (
+    Audio,
+    Document,
+    PhotoSize,
+    Video,
+    Voice,
+    Location,
+    Contact,
+)
+
+
+def _convert_photo_size(ps: PTBPhotoSize) -> PhotoSize:
+    return PhotoSize(
+        file_id=ps.file_id,
+        file_unique_id=ps.file_unique_id,
+        width=ps.width,
+        height=ps.height,
+        file_size=ps.file_size,
+    )
+
+
+def _convert_document(doc: PTBDocument | None) -> Document | None:
+    if not doc:
+        return None
+    thumb = _convert_photo_size(doc.thumbnail) if doc.thumbnail else None
+    return Document(
+        file_id=doc.file_id,
+        file_unique_id=doc.file_unique_id,
+        file_name=doc.file_name,
+        mime_type=doc.mime_type,
+        file_size=doc.file_size,
+        thumbnail=thumb,
+    )
+
+
+def _convert_video(video: PTBVideo | None) -> Video | None:
+    if not video:
+        return None
+    thumb = _convert_photo_size(video.thumbnail) if video.thumbnail else None
+    return Video(
+        file_id=video.file_id,
+        file_unique_id=video.file_unique_id,
+        width=video.width,
+        height=video.height,
+        duration=video.duration,
+        thumbnail=thumb,
+        file_name=video.file_name,
+        mime_type=video.mime_type,
+        file_size=video.file_size,
+    )
+
+
+def _convert_audio(audio: PTBAudio | None) -> Audio | None:
+    if not audio:
+        return None
+    thumb = _convert_photo_size(audio.thumbnail) if audio.thumbnail else None
+    return Audio(
+        file_id=audio.file_id,
+        file_unique_id=audio.file_unique_id,
+        duration=audio.duration,
+        performer=audio.performer,
+        title=audio.title,
+        file_name=audio.file_name,
+        mime_type=audio.mime_type,
+        file_size=audio.file_size,
+        thumbnail=thumb,
+    )
+
+
+def _convert_voice(voice: PTBVoice | None) -> Voice | None:
+    if not voice:
+        return None
+    return Voice(
+        file_id=voice.file_id,
+        file_unique_id=voice.file_unique_id,
+        duration=voice.duration,
+        mime_type=voice.mime_type,
+        file_size=voice.file_size,
+    )
+
+
+def _convert_location(location: PTBLocation | None) -> Location | None:
+    if not location:
+        return None
+    return Location(
+        longitude=location.longitude,
+        latitude=location.latitude,
+        horizontal_accuracy=location.horizontal_accuracy,
+        live_period=location.live_period,
+        heading=location.heading,
+        proximity_alert_radius=location.proximity_alert_radius,
+    )
+
+
+def _convert_contact(contact: PTBContact | None) -> Contact | None:
+    if not contact:
+        return None
+    return Contact(
+        phone_number=contact.phone_number,
+        first_name=contact.first_name,
+        last_name=contact.last_name,
+        user_id=contact.user_id,
+        vcard=contact.vcard,
+    )
 
 
 class PTBIncomingAdapter:
@@ -50,12 +169,27 @@ class PTBIncomingAdapter:
             )
         message = None
         if update.effective_message:
+            photo = None
+            if update.effective_message.photo:
+                photo = [
+                    _convert_photo_size(photo)
+                    for photo in update.effective_message.photo
+                ]
+
             message = EffectiveMessage(
                 message_id=update.effective_message.message_id,
                 chat_id=update.effective_message.chat_id,
                 date=update.effective_message.date,
-                text=update.effective_message.text,
+                text=update.effective_message.text or update.effective_message.caption,
+                photo=photo,
+                document=_convert_document(update.effective_message.document),
+                video=_convert_video(update.effective_message.video),
+                audio=_convert_audio(update.effective_message.audio),
+                voice=_convert_voice(update.effective_message.voice),
+                location=_convert_location(update.effective_message.location),
+                contact=_convert_contact(update.effective_message.contact),
             )
+
         callback_query = None
         if update.callback_query:
             message_id: int | None = None
@@ -69,6 +203,7 @@ class PTBIncomingAdapter:
                 user_id=update.callback_query.from_user.id,
                 message_id=message_id,
                 chat_id=chat_id,
+                _answer=update.callback_query.answer,
             )
 
         edited_message = None

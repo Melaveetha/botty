@@ -1,4 +1,8 @@
-from telegram.ext import Application as PTBApplication
+from loguru import logger
+from telegram.ext import (
+    Application as PTBApplication,
+    CallbackQueryHandler,
+)
 from telegram.ext import ApplicationBuilder as PTBApplicationBuilder
 from telegram.ext import ContextTypes, ExtBot
 
@@ -15,6 +19,11 @@ from ..routing import (
     Router,
 )
 from .webhook import WebhookConfig
+
+
+import logging
+
+logging.getLogger("httpx").setLevel(level=logging.DEBUG)
 
 
 class Application:
@@ -60,6 +69,13 @@ class Application:
         self.application.bot_data.middlewares = middlewares
         self.application.bot_data.exception_handlers = exception_handlers
 
+        async def log_all(update, context):
+            logger.debug(f"Update {update.update_id} arrived")
+
+        self.application.add_handler(
+            CallbackQueryHandler(log_all, pattern=".*"),
+            group=-2,
+        )
         self.application.add_handler(ConversationDispatcher(), group=-1)
         for router in routers:
             self.application.add_handlers(router.get_handlers())

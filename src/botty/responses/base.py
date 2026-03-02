@@ -4,6 +4,11 @@ from telegram import ReplyKeyboardMarkup
 from telegram.constants import ParseMode
 
 
+def _clean_dict(d: dict) -> dict:
+    """Remove keys with None values."""
+    return {k: v for k, v in d.items() if v is not None}
+
+
 @dataclass
 class BaseAnswer:
     """Base class for all bot responses.
@@ -13,7 +18,6 @@ class BaseAnswer:
     tracking.
 
     Attributes:
-        text: The main text content of the response.
         parse_mode: HTML or Markdown formatting (default HTML).
         reply_markup: Inline keyboard or reply markup.
         disable_notification: If True, sends the message silently.
@@ -23,11 +27,10 @@ class BaseAnswer:
         handler_name: Override the handler name used for registry tracking.
     """
 
-    text: str
     parse_mode: str | None = field(default=ParseMode.HTML, kw_only=True)
     reply_markup: ReplyKeyboardMarkup | None = field(default=None, kw_only=True)
-    disable_notification: bool = field(default=False, kw_only=True)
-    protect_content: bool = field(default=False, kw_only=True)
+    disable_notification: bool | None = field(default=None, kw_only=True)
+    protect_content: bool | None = field(default=None, kw_only=True)
 
     # For message registry
     message_key: str | None = field(default=None, kw_only=True)
@@ -42,12 +45,11 @@ class BaseAnswer:
     def to_dict(self) -> dict:
         """Convert to dictionary for telegram."""
         result = {
-            "text": self.text,
             "disable_notification": self.disable_notification,
             "protect_content": self.protect_content,
         }
-        if self.parse_mode:
+        if self.parse_mode is not None:
             result["parse_mode"] = self.parse_mode
-        if self.reply_markup:
+        if self.reply_markup is not None:
             result["reply_markup"] = self.reply_markup
-        return result
+        return _clean_dict(result)

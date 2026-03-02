@@ -13,7 +13,7 @@ from loguru import logger
 
 from ..di import Handler
 from ..exceptions import InvalidConversationError, InvalidHandlerError
-from .conversation import Conversation
+from .conversation import Conversation, iterate_steps
 
 
 def validate_handler(
@@ -130,7 +130,7 @@ def validate_exactly_one(
         InvalidConversationError: If cls has zero or more than one method with `attr_name`
     """
     matched_methods = []
-    for name, method in inspect.getmembers(cls, predicate=inspect.isfunction):
+    for name, method in iterate_steps(cls):
         if getattr(method, attr_name, False):
             matched_methods.append(name)
     if len(matched_methods) != 1:
@@ -163,7 +163,7 @@ def validate_at_most_one(
         InvalidConversationError: If cls has more than one method with `attr_name`
     """
     matched_methods = []
-    for name, method in inspect.getmembers(cls, predicate=inspect.isfunction):
+    for name, method in iterate_steps(cls):
         if getattr(method, attr_name, False):
             matched_methods.append(name)
     if len(matched_methods) > 1:

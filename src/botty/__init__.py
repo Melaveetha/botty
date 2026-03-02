@@ -47,7 +47,7 @@ from .responses import (
     VideoAnswer,
     VoiceAnswer,
 )
-from .routing import Router
+from .routing import Router, Conversation, step, entry, error, cancel
 
 __all__ = [
     # Application
@@ -99,6 +99,11 @@ __all__ = [
     "DiceAnswer",
     # Routing
     "Router",
+    "Conversation",
+    "step",
+    "entry",
+    "error",
+    "cancel",
     # Database
     "DatabaseProvider",
     "SQLiteProvider",

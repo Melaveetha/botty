@@ -26,8 +26,6 @@ class TestBaseAnswer:
         assert answer.text == "Hello"
         assert answer.parse_mode == ParseMode.HTML
         assert answer.reply_markup is None
-        assert answer.disable_notification is False
-        assert answer.protect_content is False
         assert answer.message_key is None
         assert answer.metadata is None
         assert answer.handler_name is None
@@ -37,8 +35,6 @@ class TestBaseAnswer:
         d = answer.to_dict()
         assert d == {
             "text": "Hi",
-            "disable_notification": False,
-            "protect_content": False,
             "parse_mode": "Markdown",
         }
 
@@ -55,7 +51,7 @@ class TestBaseAnswer:
         assert Answer(text="").type == "answer"
         assert EditAnswer(text="").type == "editanswer"
         assert EmptyAnswer().type == "emptyanswer"
-        assert PhotoAnswer(photo=b"data", text="").type == "photoanswer"
+        assert PhotoAnswer(photo=b"data").type == "photoanswer"
 
 
 class TestEditAnswer:
@@ -81,7 +77,6 @@ class TestEmptyAnswer:
 
     def test_empty_answer_creation(self):
         answer = EmptyAnswer()
-        assert answer.text is None  # EmptyAnswer allows None text
         assert answer.parse_mode is None
 
 
@@ -91,7 +86,7 @@ class TestPhotoAnswer:
     def test_photo_answer_creation(self):
         answer = PhotoAnswer(photo=b"fake_image_data", text="Caption")
         assert answer.photo == b"fake_image_data"
-        assert answer.caption is None  # defaults to None
+        assert answer.text == "Caption"  # defaults to None
 
     def test_to_dict_uses_caption_from_text(self):
         answer = PhotoAnswer(photo="file_id", text="My caption")
@@ -100,14 +95,14 @@ class TestPhotoAnswer:
         assert d["caption"] == "My caption"
 
     def test_to_dict_with_explicit_caption(self):
-        answer = PhotoAnswer(photo="file_id", text="fallback", caption="explicit")
+        answer = PhotoAnswer(photo="file_id", text="explicit")
         d = answer.to_dict()
         assert d["caption"] == "explicit"
 
     def test_to_dict_omits_none_fields(self):
-        answer = PhotoAnswer(photo="file_id", text="")
+        answer = PhotoAnswer(photo="file_id")
         d = answer.to_dict()
-        assert "caption" in d  # caption is set to text, which is empty string
+        assert "caption" not in d
 
 
 class TestDocumentAnswer:
@@ -117,7 +112,7 @@ class TestDocumentAnswer:
         answer = DocumentAnswer(document=b"pdf data", text="Doc", filename="doc.pdf")
         assert answer.document == b"pdf data"
         assert answer.filename == "doc.pdf"
-        assert answer.caption is None
+        assert answer.text == "Doc"
 
     def test_to_dict(self):
         answer = DocumentAnswer(document="file_id", text="Here's a file")
@@ -127,7 +122,7 @@ class TestDocumentAnswer:
         assert "filename" not in d
 
     def test_to_dict_with_filename(self):
-        answer = DocumentAnswer(document="file_id", text="", filename="doc.pdf")
+        answer = DocumentAnswer(document="file_id", filename="doc.pdf")
         d = answer.to_dict()
         assert d["filename"] == "doc.pdf"
 
@@ -194,12 +189,12 @@ class TestLocationAnswer:
     """Tests for LocationAnswer."""
 
     def test_location_answer_creation(self):
-        answer = LocationAnswer(latitude=40.7128, longitude=-74.0060, text="Location")
+        answer = LocationAnswer(latitude=40.7128, longitude=-74.0060)
         assert answer.latitude == 40.7128
         assert answer.longitude == -74.0060
 
     def test_to_dict(self):
-        answer = LocationAnswer(latitude=1.0, longitude=2.0, text="")
+        answer = LocationAnswer(latitude=1.0, longitude=2.0)
         d = answer.to_dict()
         assert d["latitude"] == 1.0
         assert d["longitude"] == 2.0
@@ -211,14 +206,14 @@ class TestVenueAnswer:
 
     def test_venue_answer_creation(self):
         answer = VenueAnswer(
-            latitude=40.7, longitude=-74.0, title="Central Park", address="NYC", text=""
+            latitude=40.7, longitude=-74.0, title="Central Park", address="NYC"
         )
         assert answer.title == "Central Park"
         assert answer.address == "NYC"
 
     def test_to_dict(self):
         answer = VenueAnswer(
-            latitude=40.7, longitude=-74.0, title="Park", address="NYC", text=""
+            latitude=40.7, longitude=-74.0, title="Park", address="NYC"
         )
         d = answer.to_dict()
         assert d["title"] == "Park"
@@ -230,13 +225,13 @@ class TestContactAnswer:
     """Tests for ContactAnswer."""
 
     def test_contact_answer_creation(self):
-        answer = ContactAnswer(phone_number="+123456789", first_name="John", text="")
+        answer = ContactAnswer(phone_number="+123456789", first_name="John")
         assert answer.phone_number == "+123456789"
         assert answer.first_name == "John"
         assert answer.last_name is None
 
     def test_to_dict(self):
-        answer = ContactAnswer(phone_number="+123", first_name="Jane", text="")
+        answer = ContactAnswer(phone_number="+123", first_name="Jane")
         d = answer.to_dict()
         assert d["phone_number"] == "+123"
         assert d["first_name"] == "Jane"
@@ -247,15 +242,13 @@ class TestPollAnswer:
     """Tests for PollAnswer."""
 
     def test_poll_answer_creation(self):
-        answer = PollAnswer(question="Q?", options=["A", "B"], text="")
+        answer = PollAnswer(question="Q?", options=["A", "B"])
         assert answer.question == "Q?"
         assert answer.options == ["A", "B"]
         assert answer.type == "regular"
 
     def test_to_dict(self):
-        answer = PollAnswer(
-            question="Q?", options=["A", "B"], text="", is_anonymous=False
-        )
+        answer = PollAnswer(question="Q?", options=["A", "B"], is_anonymous=False)
         d = answer.to_dict()
         assert d["question"] == "Q?"
         assert d["options"] == ["A", "B"]
@@ -268,15 +261,15 @@ class TestDiceAnswer:
     """Tests for DiceAnswer."""
 
     def test_dice_answer_default_emoji(self):
-        answer = DiceAnswer(text="")
+        answer = DiceAnswer()
         assert answer.emoji == "🎲"
 
     def test_dice_answer_custom_emoji(self):
-        answer = DiceAnswer(emoji="🎯", text="")
+        answer = DiceAnswer(emoji="🎯")
         assert answer.emoji == "🎯"
 
     def test_to_dict(self):
-        answer = DiceAnswer(emoji="🎲", text="")
+        answer = DiceAnswer(emoji="🎲")
         d = answer.to_dict()
         assert d["emoji"] == "🎲"
         assert "text" not in d  # DiceAnswer does not include text

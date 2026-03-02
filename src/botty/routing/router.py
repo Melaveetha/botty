@@ -1,4 +1,3 @@
-import inspect
 from contextlib import asynccontextmanager
 from functools import wraps
 from typing import AsyncIterator
@@ -19,7 +18,7 @@ from ..context import ContextProtocol, ConversationData
 from ..di import Handler, HandlerResponse, RequestScope
 from ..domain import Update
 from ..exceptions import InvalidConversationError, InvalidHandlerError
-from .conversation import Conversation
+from .conversation import Conversation, iterate_steps
 from .dispatcher import _run_conversation_step
 from .executor import execute_callable
 from .validation import validate_at_most_one, validate_exactly_one, validate_handler
@@ -311,7 +310,7 @@ class Router:
             validate_at_most_one(cls, "_is_error", "error")
 
             # Validate step methods
-            for name, method in inspect.getmembers(cls, predicate=inspect.isfunction):
+            for name, method in iterate_steps(cls):
                 if getattr(method, "_is_step", False):
                     try:
                         validate_handler(

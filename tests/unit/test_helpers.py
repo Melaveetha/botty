@@ -57,6 +57,12 @@ def make_update_with_message(chat_id: int = 456, text: str = "Hello") -> Update:
     )
 
 
+async def fake_answer(
+    text: str | None = None, show_alert: bool | None = None, url: str | None = None
+):
+    pass
+
+
 def make_update_with_callback_query(
     data: str = "button_1", user_id: int = 123, chat_id: int = 456
 ) -> Update:
@@ -68,6 +74,7 @@ def make_update_with_callback_query(
             user_id=user_id,
             message_id=100,
             chat_id=chat_id,
+            _answer=fake_answer,  # ty: ignore
         ),
     )
 

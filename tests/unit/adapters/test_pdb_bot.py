@@ -68,7 +68,7 @@ class TestSend:
     @pytest.mark.parametrize(
         "answer_class,ptb_method,extra_kwargs",
         [
-            (Answer, "send_message", {}),
+            (Answer, "send_message", {"text": "test"}),
             (PhotoAnswer, "send_photo", {"photo": b"fake"}),
             (DocumentAnswer, "send_document", {"document": b"fake"}),
             (AudioAnswer, "send_audio", {"audio": b"fake"}),
@@ -98,7 +98,7 @@ class TestSend:
         self, adapter, mock_ptb_bot, answer_class, ptb_method, extra_kwargs
     ):
         """Verify the correct PTB send_* method is called with expected arguments."""
-        kwargs = {"text": "Test"} if answer_class != EmptyAnswer else {}
+        kwargs = {}
         kwargs.update(extra_kwargs)
         answer = answer_class(**kwargs)
 
@@ -134,7 +134,7 @@ class TestSend:
         class UnknownAnswer(BaseAnswer):
             pass
 
-        answer = UnknownAnswer(text="test")
+        answer = UnknownAnswer()
         with caplog.at_level("WARNING"):
             result = await adapter.send(123, answer)
 

@@ -29,7 +29,7 @@ async def modify_middleware(
     """Adds a suffix to every text response."""
     async for response in inner:
         if hasattr(response, "text") and response.text:
-            response.text += " (modified)"
+            response.text += " (modified)"  # ty: ignore
         yield response
 
 
@@ -104,7 +104,7 @@ class TestMiddlewareExecution:
 
         client: TestBotClient = test_context_with_mock.bot_data.bot_client  # ty: ignore [invalid-assignment]
         assert len(client.sent) == 1
-        assert client.sent[0].answer.text == "Hello (modified)"
+        assert client.sent[0].answer.text == "Hello (modified)"  # ty: ignore
 
     @pytest.mark.asyncio
     async def test_middleware_short_circuit(
@@ -132,7 +132,7 @@ class TestMiddlewareExecution:
 
         client: TestBotClient = test_context_with_mock.bot_data.bot_client  # ty: ignore [invalid-assignment]
         assert len(client.sent) == 1
-        assert client.sent[0].answer.text == "Short-circuited"
+        assert client.sent[0].answer.text == "Short-circuited"  # ty: ignore
 
     @pytest.mark.asyncio
     async def test_middleware_can_modify_response_stream(
@@ -155,8 +155,8 @@ class TestMiddlewareExecution:
 
         client: TestBotClient = test_context_with_mock.bot_data.bot_client  # ty: ignore [invalid-assignment]
         assert len(client.sent) == 2
-        assert client.sent[0].answer.text == "First (modified)"
-        assert client.sent[1].answer.text == "Second (modified)"
+        assert client.sent[0].answer.text == "First (modified)"  # ty: ignore
+        assert client.sent[1].answer.text == "Second (modified)"  # ty: ignore
 
     @pytest.mark.asyncio
     async def test_middleware_can_handle_exceptions(
@@ -184,7 +184,7 @@ class TestMiddlewareExecution:
         ]
         client: TestBotClient = test_context_with_mock.bot_data.bot_client  # ty: ignore [invalid-assignment]
         assert len(client.sent) == 1
-        assert client.sent[0].answer.text == "Error recovered"
+        assert client.sent[0].answer.text == "Error recovered"  # ty: ignore
 
     @pytest.mark.asyncio
     async def test_middleware_can_use_update_and_context(
@@ -220,7 +220,7 @@ class TestMiddlewareExecution:
         assert mock_calls.mock_calls == [call.handler_executed()]
         client: TestBotClient = test_context_with_mock.bot_data.bot_client  # ty: ignore [invalid-assignment]
         assert len(client.sent) == 1
-        assert client.sent[0].answer.text == "Secret data"
+        assert client.sent[0].answer.text == "Secret data"  # ty: ignore
 
         unauth_update = make_message_update(text="/secure", user_id=999, chat_id=456)
         mock_calls.reset_mock()
@@ -228,7 +228,7 @@ class TestMiddlewareExecution:
         await wrapper(unauth_update, test_context_with_mock)
         assert mock_calls.mock_calls == []  # handler not called
         assert len(client.sent) == 1
-        assert client.sent[0].answer.text == "Unauthorized"
+        assert client.sent[0].answer.text == "Unauthorized"  # ty: ignore
 
 
 class TestMiddlewareWithConversations:
@@ -266,12 +266,12 @@ class TestMiddlewareWithConversations:
         )
         await tester.start()
 
-        assert tester.last_responses[0].answer.text == "Start (modified)"
+        assert tester.last_responses[0].answer.text == "Start (modified)"  # ty: ignore
         assert mock_calls.mock_calls == [call.start_executed()]
 
         mock_calls.reset_mock()
         await tester.send_message("anything")
-        assert tester.last_responses[0].answer.text == "Next (modified)"
+        assert tester.last_responses[0].answer.text == "Next (modified)"  # ty: ignore
         assert mock_calls.mock_calls == [call.next_executed()]
 
 
@@ -300,7 +300,7 @@ class TestMiddlewareEdgeCases:
         assert mock_calls.mock_calls == [call.handler_executed()]
         client: TestBotClient = test_context_with_mock.bot_data.bot_client  # ty: ignore [invalid-assignment]
         assert len(client.sent) == 1
-        assert client.sent[0].answer.text == "Hello"
+        assert client.sent[0].answer.text == "Hello"  # ty: ignore
 
     @pytest.mark.asyncio
     async def test_handler_without_responses(

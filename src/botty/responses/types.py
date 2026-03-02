@@ -3,12 +3,7 @@ from typing import Any, Literal, TypeAlias
 
 from telegram.constants import ParseMode
 
-from .base import BaseAnswer
-
-
-def _clean_dict(d: dict) -> dict:
-    """Remove keys with None values."""
-    return {k: v for k, v in d.items() if v is not None}
+from .base import BaseAnswer, _clean_dict
 
 
 @dataclass
@@ -26,6 +21,13 @@ class Answer(BaseAnswer):
             yield Answer(text="Hello, world!")
         ```
     """
+
+    text: str
+
+    def to_dict(self) -> dict[str, Any]:
+        d = super().to_dict()
+        d["text"] = self.text
+        return _clean_dict(d)
 
 
 # TODO: add editing of other types of messages: photo, video and so on.
@@ -53,10 +55,16 @@ class EditAnswer(BaseAnswer):
         ```
     """
 
+    text: str
     message_id: int | None = field(
         default=None, kw_only=True
     )  # Edit specific message by id
     message_key: str | None = field(default=None, kw_only=True)  # Reference by key
+
+    def to_dict(self) -> dict[str, Any]:
+        d = super().to_dict()
+        d["text"] = self.text
+        return _clean_dict(d)
 
 
 @dataclass
@@ -75,7 +83,6 @@ class EmptyAnswer(BaseAnswer):
         ```
     """
 
-    text: str | None = field(default=None, kw_only=True)
     parse_mode: ParseMode | None = field(default=None, kw_only=True)
 
 
@@ -101,19 +108,13 @@ class PhotoAnswer(BaseAnswer):
     """
 
     photo: str | bytes
-    caption: str | None = field(default=None, kw_only=True)
+    text: str | None = field(default=None, kw_only=True)
 
     def to_dict(self) -> dict[str, Any]:
-        return _clean_dict(
-            {
-                "photo": self.photo,
-                "caption": self.caption or self.text,
-                "parse_mode": self.parse_mode,
-                "reply_markup": self.reply_markup,
-                "disable_notification": self.disable_notification,
-                "protect_content": self.protect_content,
-            }
-        )
+        d = super().to_dict()
+        d["photo"] = self.photo
+        d["caption"] = self.text
+        return _clean_dict(d)
 
 
 @dataclass
@@ -141,21 +142,15 @@ class DocumentAnswer(BaseAnswer):
     """
 
     document: str | bytes
+    text: str | None = field(default=None, kw_only=True)
     filename: str | None = field(default=None, kw_only=True)
-    caption: str | None = field(default=None, kw_only=True)
 
     def to_dict(self) -> dict[str, Any]:
-        return _clean_dict(
-            {
-                "document": self.document,
-                "filename": self.filename,
-                "caption": self.caption or self.text,
-                "parse_mode": self.parse_mode,
-                "reply_markup": self.reply_markup,
-                "disable_notification": self.disable_notification,
-                "protect_content": self.protect_content,
-            }
-        )
+        d = super().to_dict()
+        d["document"] = self.document
+        d["filename"] = self.filename
+        d["caption"] = self.text
+        return _clean_dict(d)
 
 
 @dataclass
@@ -185,24 +180,18 @@ class AudioAnswer(BaseAnswer):
 
     audio: str | bytes
     title: str | None = field(default=None, kw_only=True)
-    caption: str | None = field(default=None, kw_only=True)
+    text: str | None = field(default=None, kw_only=True)
     duration: int | None = field(default=None, kw_only=True)
     performer: str | None = field(default=None, kw_only=True)
 
     def to_dict(self) -> dict[str, Any]:
-        return _clean_dict(
-            {
-                "audio": self.audio,
-                "caption": self.caption or self.text,
-                "parse_mode": self.parse_mode,
-                "duration": self.duration,
-                "performer": self.performer,
-                "title": self.title,
-                "reply_markup": self.reply_markup,
-                "disable_notification": self.disable_notification,
-                "protect_content": self.protect_content,
-            }
-        )
+        d = super().to_dict()
+        d["audio"] = self.audio
+        d["title"] = self.title
+        d["duration"] = self.duration
+        d["performer"] = self.performer
+        d["caption"] = self.text
+        return _clean_dict(d)
 
 
 @dataclass
@@ -231,27 +220,21 @@ class VideoAnswer(BaseAnswer):
     """
 
     video: str | bytes
-    caption: str | None = field(default=None, kw_only=True)
+    text: str | None = field(default=None, kw_only=True)
     duration: int | None = field(default=None, kw_only=True)
     width: int | None = field(default=None, kw_only=True)
     height: int | None = field(default=None, kw_only=True)
     supports_streaming: bool = False
 
     def to_dict(self) -> dict[str, Any]:
-        return _clean_dict(
-            {
-                "video": self.video,
-                "caption": self.caption or self.text,
-                "parse_mode": self.parse_mode,
-                "duration": self.duration,
-                "width": self.width,
-                "height": self.height,
-                "supports_streaming": self.supports_streaming,
-                "reply_markup": self.reply_markup,
-                "disable_notification": self.disable_notification,
-                "protect_content": self.protect_content,
-            }
-        )
+        d = super().to_dict()
+        d["video"] = self.video
+        d["duration"] = self.duration
+        d["width"] = self.width
+        d["height"] = self.height
+        d["supports_streaming"] = self.supports_streaming
+        d["caption"] = self.text
+        return _clean_dict(d)
 
 
 @dataclass
@@ -277,21 +260,15 @@ class VoiceAnswer(BaseAnswer):
     """
 
     voice: str | bytes
-    caption: str | None = field(default=None, kw_only=True)
+    text: str | None = field(default=None, kw_only=True)
     duration: int | None = field(default=None, kw_only=True)
 
     def to_dict(self) -> dict[str, Any]:
-        return _clean_dict(
-            {
-                "voice": self.voice,
-                "caption": self.caption or self.text,
-                "parse_mode": self.parse_mode,
-                "duration": self.duration,
-                "reply_markup": self.reply_markup,
-                "disable_notification": self.disable_notification,
-                "protect_content": self.protect_content,
-            }
-        )
+        d = super().to_dict()
+        d["voice"] = self.voice
+        d["duration"] = self.duration
+        d["caption"] = self.text
+        return _clean_dict(d)
 
 
 @dataclass
@@ -328,19 +305,15 @@ class LocationAnswer(BaseAnswer):
     proximity_alert_radius: int | None = field(default=None, kw_only=True)
 
     def to_dict(self) -> dict[str, Any]:
-        return _clean_dict(
-            {
-                "latitude": self.latitude,
-                "longitude": self.longitude,
-                "horizontal_accuracy": self.horizontal_accuracy,
-                "live_period": self.live_period,
-                "heading": self.heading,
-                "proximity_alert_radius": self.proximity_alert_radius,
-                "reply_markup": self.reply_markup,
-                "disable_notification": self.disable_notification,
-                "protect_content": self.protect_content,
-            }
-        )
+        d = super().to_dict()
+        d["parse_mode"] = None
+        d["latitude"] = self.latitude
+        d["longitude"] = self.longitude
+        d["horizontal_accuracy"] = self.horizontal_accuracy
+        d["live_period"] = self.live_period
+        d["heading"] = self.heading
+        d["proximity_alert_radius"] = self.proximity_alert_radius
+        return _clean_dict(d)
 
 
 @dataclass
@@ -379,21 +352,17 @@ class VenueAnswer(BaseAnswer):
     google_place_type: str | None = field(default=None, kw_only=True)
 
     def to_dict(self) -> dict[str, Any]:
-        return _clean_dict(
-            {
-                "latitude": self.latitude,
-                "longitude": self.longitude,
-                "title": self.title,
-                "address": self.address,
-                "foursquare_id": self.foursquare_id,
-                "foursquare_type": self.foursquare_type,
-                "google_place_id": self.google_place_id,
-                "google_place_type": self.google_place_type,
-                "reply_markup": self.reply_markup,
-                "disable_notification": self.disable_notification,
-                "protect_content": self.protect_content,
-            }
-        )
+        d = super().to_dict()
+        d["parse_mode"] = None
+        d["latitude"] = self.latitude
+        d["longitude"] = self.longitude
+        d["title"] = self.title
+        d["address"] = self.address
+        d["foursquare_id"] = self.foursquare_id
+        d["foursquare_type"] = self.foursquare_type
+        d["google_place_id"] = self.google_place_id
+        d["google_place_type"] = self.google_place_type
+        return _clean_dict(d)
 
 
 @dataclass
@@ -426,17 +395,13 @@ class ContactAnswer(BaseAnswer):
     vcard: str | None = field(default=None, kw_only=True)
 
     def to_dict(self) -> dict[str, Any]:
-        return _clean_dict(
-            {
-                "phone_number": self.phone_number,
-                "first_name": self.first_name,
-                "last_name": self.last_name,
-                "vcard": self.vcard,
-                "reply_markup": self.reply_markup,
-                "disable_notification": self.disable_notification,
-                "protect_content": self.protect_content,
-            }
-        )
+        d = super().to_dict()
+        d["parse_mode"] = None
+        d["phone_number"] = self.phone_number
+        d["first_name"] = self.first_name
+        d["last_name"] = self.last_name
+        d["vcard"] = self.vcard
+        return _clean_dict(d)
 
 
 PollTypes: TypeAlias = Literal["regular"] | Literal["quiz"]
@@ -487,24 +452,19 @@ class PollAnswer(BaseAnswer):
     is_closed: bool = field(default=False, kw_only=True)
 
     def to_dict(self) -> dict[str, Any]:
-        return _clean_dict(
-            {
-                "question": self.question or self.text,
-                "options": self.options,
-                "is_anonymous": self.is_anonymous,
-                "type": self.type,
-                "allows_multiple_answers": self.allows_multiple_answers,
-                "correct_option_id": self.correct_option_id,
-                "explanation": self.explanation,
-                "explanation_parse_mode": self.explanation_parse_mode,
-                "open_period": self.open_period,
-                "close_date": self.close_date,
-                "is_closed": self.is_closed,
-                "reply_markup": self.reply_markup,
-                "disable_notification": self.disable_notification,
-                "protect_content": self.protect_content,
-            }
-        )
+        d = super().to_dict()
+        d["question"] = self.question
+        d["options"] = self.options
+        d["is_anonymous"] = self.is_anonymous
+        d["type"] = self.type
+        d["allows_multiple_answers"] = self.allows_multiple_answers
+        d["correct_option_id"] = self.correct_option_id
+        d["explanation"] = self.explanation
+        d["explanation_parse_mode"] = self.explanation_parse_mode
+        d["open_period"] = self.open_period
+        d["close_date"] = self.close_date
+        d["is_closed"] = self.is_closed
+        return _clean_dict(d)
 
 
 DiceEmojis: TypeAlias = (
@@ -537,11 +497,7 @@ class DiceAnswer(BaseAnswer):
     emoji: DiceEmojis = "🎲"  # 🎲, 🎯, 🏀, ⚽, 🎰, 🎳
 
     def to_dict(self) -> dict[str, Any]:
-        return _clean_dict(
-            {
-                "emoji": self.emoji,
-                "reply_markup": self.reply_markup,
-                "disable_notification": self.disable_notification,
-                "protect_content": self.protect_content,
-            }
-        )
+        d = super().to_dict()
+        d["parse_mode"] = None
+        d["emoji"] = self.emoji
+        return _clean_dict(d)

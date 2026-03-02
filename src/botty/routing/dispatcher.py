@@ -1,5 +1,4 @@
 from types import MethodType
-import inspect
 from loguru import logger
 from telegram import Update as PTBUpdate
 from telegram.ext import (
@@ -13,7 +12,7 @@ from telegram.ext import (
 from ..adapters import PTBIncomingAdapter
 from ..context import BotData, ChatData, Context, ContextProtocol, UserData
 from ..di import RequestScope
-from .conversation import Conversation
+from .conversation import Conversation, iterate_steps
 from .executor import execute_callable
 
 
@@ -61,6 +60,7 @@ class ConversationDispatcher(BaseHandler[PTBUpdate, Context, None]):
         Process an update: if a conversation is active, run its current step
         and stop propagation. Otherwise, do nothing.
         """
+        logger.debug(f"Processing update {update.update_id}")
         if context.user_data is None:
             logger.debug("No user data – passing through")
             return
@@ -90,9 +90,7 @@ class ConversationDispatcher(BaseHandler[PTBUpdate, Context, None]):
             command = update.effective_message.text[1:].split()[0]
             if command == conversation_class._cancel_command:
                 cancel_step = "_default_cancel_step"
-                for name, method in inspect.getmembers(
-                    conversation_class, predicate=inspect.ismethod
-                ):
+                for name, method in iterate_steps(conversation_class):
                     if getattr(method, "_is_cancel", False):
                         cancel_step = name
 
@@ -106,9 +104,7 @@ class ConversationDispatcher(BaseHandler[PTBUpdate, Context, None]):
             )
         except Exception as exception:
             error_step = "_default_error_step"
-            for name, method in inspect.getmembers(
-                conversation_class, predicate=inspect.ismethod
-            ):
+            for name, method in iterate_steps(conversation_class):
                 if getattr(method, "_is_error", False):
                     error_step = name
             try:
