@@ -22,6 +22,7 @@ class BaseAnswer:
         reply_markup: Inline keyboard or reply markup.
         disable_notification: If True, sends the message silently.
         protect_content: If True, prevents forwarding and saving.
+        chat_id: If present, sends message to a specific chat.
         message_key: Optional key for later retrieval via MessageRegistry.
         metadata: Arbitrary additional data to store with the message.
         handler_name: Override the handler name used for registry tracking.
@@ -31,6 +32,8 @@ class BaseAnswer:
     reply_markup: ReplyKeyboardMarkup | None = field(default=None, kw_only=True)
     disable_notification: bool | None = field(default=None, kw_only=True)
     protect_content: bool | None = field(default=None, kw_only=True)
+
+    chat_id: int | None = field(default=None, kw_only=True)
 
     # For message registry
     message_key: str | None = field(default=None, kw_only=True)

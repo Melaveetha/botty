@@ -1,10 +1,10 @@
-from botty.routing import MessageRegistry
 import time
-from botty.testing import TestMessageRegistry
 from datetime import datetime
 
 from botty.domain import Message
 from botty.responses import EditAnswer
+from botty.routing import MessageRegistry
+from botty.testing import TestMessageRegistry
 
 
 class TestMessageRegistryLocal:

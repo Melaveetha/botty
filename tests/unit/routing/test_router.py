@@ -1,4 +1,3 @@
-# tests/unit/routing/test_router.py
 from typing import Annotated, AsyncGenerator
 from unittest.mock import Mock, patch
 
@@ -331,6 +330,29 @@ class TestHandlerExecution:
         assert record.handler_name == "handler"
         assert record.metadata == {"foo": "bar"}
         assert record.chat_id == 456
+
+    @pytest.mark.asyncio
+    async def test_sends_message_to_right_chat_id(
+        self, router, ptb_update, test_context_with_doubles
+    ):
+        @router.command("start")
+        async def handler(update: Update, context: Context):
+            yield Answer(text="Hello", chat_id=123)
+
+        wrapper = router.handlers[0][2]
+        await wrapper(ptb_update, test_context_with_doubles)
+
+        client = test_context_with_doubles.bot_data.bot_client
+        assert len(client.sent) == 1
+        assert client.sent[0].answer.text == "Hello"
+        assert client.sent[0].method == "send"
+
+        registry = test_context_with_doubles.bot_data.message_registry
+        records = registry.get_all_records()
+        assert len(records) == 1
+        assert records[0].handler_name == "handler"
+        assert records[0].message_id == 1000
+        assert records[0].chat_id == 123
 
 
 class TestErrorHandling:

@@ -1,12 +1,12 @@
-from botty.testing.helpers import make_message_update
 from collections.abc import AsyncGenerator
 from unittest.mock import Mock, call
 
 import pytest
 
 from botty import Answer, BaseAnswer, Context, Update
-from botty.routing import Router, Conversation, entry, step
+from botty.routing import Conversation, Router, entry, step
 from botty.testing import TestBotClient, TestContext
+from botty.testing.helpers import make_message_update
 
 
 async def logging_middleware(

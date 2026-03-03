@@ -48,7 +48,9 @@ class ResponseProcessor:
 
         async for response in generator:
             try:
-                await self._process_single_response(response, chat_id, handler_name)
+                await self._process_single_response(
+                    response, response.chat_id or chat_id, handler_name
+                )
             except ResponseProcessingError as e:
                 logger.exception(
                     f"Error processing response in handler '{handler_name}': {e}"
