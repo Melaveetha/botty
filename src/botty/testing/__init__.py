@@ -8,6 +8,7 @@ from .context import TestContext
 from .database import TestDatabaseProvider
 from .registry import TestMessageRegistry
 from .scope import TestRequestScope
+from .conversation import ConversationTester
 
 __all__ = [
     "TestBotClient",
@@ -16,4 +17,5 @@ __all__ = [
     "TestDatabaseProvider",
     "TestMessageRegistry",
     "TestRequestScope",
+    "ConversationTester",
 ]

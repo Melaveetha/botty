@@ -58,9 +58,8 @@ async def execute_callable(
 
 async def _handle_error(e: Exception, old_scope: RequestScope, handle_name: str):
     try:
-        if old_scope.session is not None:
-            old_scope.session.rollback()
-            old_scope.close()
+        old_scope.session.rollback()
+        old_scope.close()
     except DatabaseNotConfiguredError:
         pass
 
