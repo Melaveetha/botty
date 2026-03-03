@@ -1,12 +1,17 @@
-from types import MethodType
-from collections.abc import Callable
 import inspect
+from collections.abc import Callable, Awaitable
+from types import MethodType
 from typing import Any
 
-from ..exceptions import DatabaseNotConfiguredError, DependencyResolutionError
+from ..exceptions import (
+    DependencyResolutionError,
+    InvalidHandlerError,
+)
+from .types import HandlerProtocol
+from ..domain import BaseRepository, BaseService
 from .container import DependencyContainer
 from .scope import RequestScope
-from .types import Handler
+from .types import Handler, ResolutionPlan
 from .utils import _extract_depends
 
 
@@ -73,75 +78,150 @@ class DependencyResolver:
         unbound = method.__func__
         handler_name = f"{instance.__class__.__name__}.{method.__name__}"
         return await self._resolve_callable(
-            unbound, scope, skip_params=1, handler_name=handler_name
+            unbound,  # ty: ignore [invalid-argument-type]
+            scope,
+            skip_params=1,
+            handler_name=handler_name,
         )
 
     async def _resolve_callable(
         self,
-        func: Callable,
+        func: HandlerProtocol,
         scope: RequestScope,
         skip_params: int = 0,
         handler_name: str | None = None,
     ) -> dict[str, Any]:
-        sig = inspect.signature(func)
-        type_hints = inspect.get_annotations(func)
-
         if handler_name is None:
             handler_name = getattr(func, "__name__") or "unknown"
 
+        plan: ResolutionPlan | None = getattr(func, "__botty_resolve_plan__", None)
+        if plan is None:
+            plan = await self.build_resolve_plan(func, handler_name, skip_params)
+            setattr(func, "__botty_resolve_plan__", plan)
         kwargs = {}
 
-        for param_name, param in list(sig.parameters.items())[skip_params:]:
-            annotation = type_hints.get(param_name)
-
-            dep = _extract_depends(annotation)
-            if dep is None:
-                if annotation is not None:
-                    try:
-                        injected = self.container._inject_basic_dependencies(
-                            annotation, scope
-                        )
-                        if injected is not None:
-                            kwargs[param_name] = injected
-                            continue
-                    except DatabaseNotConfiguredError as e:
-                        raise DependencyResolutionError(
-                            message=f"{e.message} (handler '{handler_name}', parameter '{param_name}')",
-                            dependency_chain=[handler_name, param_name],
-                            parameter_name=param_name,
-                            handler_name=handler_name,
-                        ) from e
-
-                raise DependencyResolutionError(
-                    message=(
-                        "Annotation does not contain Depends\n"
-                        f"Parameter '{param_name}' of handler '{handler_name}' has no dependency information.\n"
-                        "Either:\n"
-                        "  - Use Annotated[T, Depends(...)] for injectable parameters, or\n"
-                        "  - Remove the parameter if it is not needed."
-                    ),
-                    dependency_chain=[handler_name, param_name],
-                    handler_name=handler_name,
-                    parameter_name=param_name,
-                    suggestion=(
-                        "Example: async def handler(..., repo: Annotated[UserRepo, Depends(get_repo)]):"
-                    ),
-                )
-
-            dependency_chain = [handler_name, param_name]
-            try:
-                kwargs[param_name] = await self.container.resolve_dependency(
-                    dep, scope, dependency_chain
-                )
-            except DependencyResolutionError:
-                raise
-            except Exception as e:
-                raise DependencyResolutionError(
-                    message=f"Failed to resolve dependency: {e}",
-                    dependency_chain=dependency_chain,
-                    parameter_name=param_name,
-                    handler_name=handler_name,
-                    suggestion="Check that all required dependencies are registered.",
-                ) from e
+        for param_name, resolver in plan:
+            kwargs[param_name] = await resolver(scope)
 
         return kwargs
+
+    async def build_resolve_plan(
+        self, handler: Handler, handler_name: str, skip_params: int = 0
+    ) -> ResolutionPlan:
+        """
+        Pre‑compute resolvers for all injectable parameters of a handler.
+
+        Args:
+            handler: The handler function (unbound).
+            handler_name: Name of the handler (for error messages).
+            skip_params: Number of initial parameters to ignore
+                         (0 for free functions, 1 for bound methods).
+
+        Returns:
+            ResolutionPlan (list of (param_name, async_resolver) pairs).
+        """
+        sig = inspect.signature(handler)
+        type_hints = inspect.get_annotations(handler)
+
+        if handler_name is None:
+            handler_name = getattr(handler, "__name__") or "unknown"
+
+        params = list(sig.parameters.items())
+
+        if len(params) < skip_params + 2:
+            raise InvalidHandlerError(
+                handler_name=handler_name,
+                reason="Handler must accept at least 'update' and 'context' parameters",
+            )
+
+        plan: ResolutionPlan = []
+
+        for param_name, param in params[skip_params:]:
+            annotation = type_hints.get(param_name)
+            resolver = self._build_param_resolver(param_name, annotation, handler_name)
+            plan.append((param_name, resolver))
+
+        return plan
+
+    def _build_param_resolver(
+        self,
+        param_name: str,
+        annotation: Any,
+        handler_name: str,
+    ) -> Callable[[RequestScope], Awaitable[Any]]:
+        dep = _extract_depends(annotation)
+        if dep is not None:
+
+            async def depends_resolve(scope: RequestScope):
+                container = scope.context.bot_data.dependency_container
+                try:
+                    return await container.resolve_dependency(
+                        dep, scope, [handler_name, param_name]
+                    )
+                except Exception as e:
+                    raise DependencyResolutionError(
+                        message=f"Failed to resolve dependency `{annotation}`. Got following error: {e}",
+                        dependency_chain=[handler_name, param_name],
+                        handler_name=handler_name,
+                        parameter_name=param_name,
+                        suggestion=f"Verify you using correct syntax: async def {handler_name}(update: Update, context: Context, data: Annotated[Data, Depends(get_data)])",
+                    )
+
+            return depends_resolve
+
+        basic_resolve = self.container._BASIC_DEPENDENCIES.get(annotation, None)
+        if basic_resolve is not None:
+
+            async def basic_resolver(scope: RequestScope):
+                try:
+                    return basic_resolve(scope)
+                except Exception as e:
+                    raise DependencyResolutionError(
+                        message=f"Failed to resolve dependency `{annotation}`. Got following error: {e}",
+                        dependency_chain=[handler_name, param_name],
+                        handler_name=handler_name,
+                        parameter_name=param_name,
+                    )
+
+            return basic_resolver
+
+        if hasattr(annotation, "__mro__") and BaseService in annotation.__mro__:
+
+            async def service_resolver(scope: RequestScope):
+                container = scope.context.bot_data.dependency_container
+                try:
+                    return container.singleton(annotation)
+                except Exception as e:
+                    raise DependencyResolutionError(
+                        message=f"Failed to resolve service `{annotation}`. Got following error: {e}",
+                        dependency_chain=[handler_name, param_name],
+                        handler_name=handler_name,
+                        parameter_name=param_name,
+                        suggestion=(
+                            "Example: async def handler(..., repo: MapService):"
+                        ),
+                    )
+
+            return service_resolver
+
+        if hasattr(annotation, "__mro__") and BaseRepository in annotation.__mro__:
+
+            async def repository_resolver(scope: RequestScope):
+                try:
+                    return annotation(session=scope.session)
+                except Exception as e:
+                    raise DependencyResolutionError(
+                        message=f"Failed to resolve repository `{annotation}`. Got following error: {e}",
+                        dependency_chain=[handler_name, param_name],
+                        handler_name=handler_name,
+                        parameter_name=param_name,
+                        suggestion=("Example: async def handler(..., repo: UserRepo):"),
+                    )
+
+            return repository_resolver
+
+        raise InvalidHandlerError(
+            handler_name=handler_name,
+            reason=f"Parameter '{param_name}' has no dependency information",
+            suggestion="Use Annotated[T, Depends(...)] for injectable parameters, or ensure it's a repository/service class.",
+        )

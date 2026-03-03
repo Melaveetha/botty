@@ -435,7 +435,7 @@ class TestErrorHandling:
         with pytest.raises(DependencyResolutionError) as exc:
             await wrapper(ptb_update, ctx)
         assert "no database provider configured" in str(exc.value)
-        assert "handler 'needs_db_handler'" in str(exc.value)
+        assert "Handler: needs_db_handler" in str(exc.value)
 
 
 class TestRouterInternals:

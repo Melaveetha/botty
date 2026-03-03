@@ -14,7 +14,10 @@ from botty import (
 )
 from botty.context import ContextProtocol
 from botty.di import DependencyResolver, RequestScope
-from botty.exceptions import DependencyResolutionError
+from botty.exceptions import (
+    DependencyResolutionError,
+    InvalidHandlerError,
+)
 from botty.testing import TestContext, TestDependencyContainer
 
 
@@ -230,17 +233,21 @@ class TestErrorCases:
     """Tests for error conditions during dependency resolution."""
 
     async def test_no_annotation_raises(self, resolver, request_scope):
-        with pytest.raises(DependencyResolutionError) as exc:
+        with pytest.raises(InvalidHandlerError) as exc:
             await resolver.resolve_handler(no_annotation_handler, request_scope)
         assert "no dependency information" in str(exc.value).lower()
-        assert "Parameter 'unknown' of handler 'no_annotation_handler'" in str(
-            exc.value
+        assert (
+            "Invalid handler 'no_annotation_handler': Parameter 'unknown' has no dependency information"
+            in str(exc.value)
         )
 
     async def test_str_annotation_without_depends_raises(self, resolver, request_scope):
-        with pytest.raises(DependencyResolutionError) as exc:
+        with pytest.raises(InvalidHandlerError) as exc:
             await resolver.resolve_handler(str_annotation_handler, request_scope)
-        assert "annotation does not contain depends" in str(exc.value).lower()
+        assert (
+            "handler 'str_annotation_handler': parameter 'name' has no dependency information"
+            in str(exc.value).lower()
+        )
 
     async def test_database_not_configured_for_session(self, container):
         """Session injection fails if no database provider in bot_data."""
@@ -253,14 +260,16 @@ class TestErrorCases:
         with pytest.raises(DependencyResolutionError) as exc:
             await resolver.resolve_handler(session_handler_no_db, scope)  # ty: ignore [invalid-argument-type]
         assert "no database provider configured" in str(exc.value)
-        assert "handler 'session_handler_no_db'" in str(exc.value)
+        assert "Handler: session_handler_no_db" in str(exc.value)
 
     async def test_dependency_raises_exception_replaced(self, container, request_scope):
         async def failing_dep():
             raise ValueError("fail")
 
         # We need a handler that uses this dep. Create a quick one.
-        async def bad_handler(update, context, x: Annotated[str, Depends(failing_dep)]):
+        async def bad_handler(
+            update: Update, context: Context, x: Annotated[str, Depends(failing_dep)]
+        ):
             pass
 
         resolver = DependencyResolver(container)

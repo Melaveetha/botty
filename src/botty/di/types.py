@@ -1,6 +1,7 @@
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Callable, Awaitable
 from typing import Any, Protocol, TypeAlias, runtime_checkable
 
+from .scope import RequestScope
 from ..context import ContextProtocol
 from ..domain import Update
 from ..responses import BaseAnswer
@@ -62,3 +63,6 @@ class HandlerProtocol(Protocol):
 
 # Type alias for convenience
 Handler: TypeAlias = HandlerProtocol
+
+
+ResolutionPlan: TypeAlias = list[tuple[str, Callable[[RequestScope], Awaitable[Any]]]]
