@@ -324,7 +324,6 @@ class TestMiddlewareEdgeCases:
             context.mock_calls.handler_executed()  # ty: ignore [unresolved-attribute]
             yield Answer(text="Hello")
 
-        print(router.handlers)
         wrapper = router.handlers[0][2]
         await wrapper(ptb_update, test_context_with_mock)
 

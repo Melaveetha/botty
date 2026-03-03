@@ -132,7 +132,6 @@ class RegisterConversation(Conversation):
     async def on_error(
         self, update: Update, context: Context, exception: Exception
     ) -> HandlerResponse:
-        print(exception)
         yield Answer("Sorry, something went wrong. Please try again later.")
         self.end()
 

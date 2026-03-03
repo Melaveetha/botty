@@ -1,4 +1,3 @@
-import time
 from datetime import datetime
 
 from botty.domain import Message
@@ -132,26 +131,28 @@ class TestMessageRegistryLocal:
 
         # Setup: register some messages with different attributes
         # Message with direct ID
-        msg_id = Message(message_id=50, chat_id=chat_id, date=datetime.now())
+        msg_id = Message(message_id=50, chat_id=chat_id, date=datetime.fromtimestamp(0))
         message_registry.register_message(msg_id, handler_name="other")
-        time.sleep(0.001)
 
         # Message with key
-        msg_key = Message(message_id=51, chat_id=chat_id, date=datetime.now())
+        msg_key = Message(
+            message_id=51, chat_id=chat_id, date=datetime.fromtimestamp(5)
+        )
         message_registry.register_message(
             msg_key, handler_name="other", key="target_key"
         )
-        time.sleep(0.001)
 
         # Message from same handler
-        msg_handler = Message(message_id=52, chat_id=chat_id, date=datetime.now())
+        msg_handler = Message(
+            message_id=52, chat_id=chat_id, date=datetime.fromtimestamp(10)
+        )
         message_registry.register_message(msg_handler, handler_name=handler_name)
-        time.sleep(0.001)
 
         # Last message in chat
-        msg_last = Message(message_id=53, chat_id=chat_id, date=datetime.now())
+        msg_last = Message(
+            message_id=53, chat_id=chat_id, date=datetime.fromtimestamp(15)
+        )
         message_registry.register_message(msg_last, handler_name="other")
-        time.sleep(0.001)
 
         # 1. Direct message ID takes precedence
         answer = EditAnswer(text="edit", message_id=50)
@@ -242,7 +243,9 @@ class TestMessageRegistryLocal:
         assert len(message_registry.get_by_handler("h3")) == 1
         assert len(message_registry.get_by_handler("h4")) == 1
 
-    def test_cleanup_removes_empty_handler_entry(self, message_registry):
+    def test_cleanup_removes_empty_handler_entry(
+        self, message_registry: MessageRegistry
+    ):
         """When last message of a handler is removed, handler entry is deleted."""
         chat_id = 1
         msg = Message(message_id=1, chat_id=chat_id, date=datetime.now())
@@ -257,4 +260,4 @@ class TestMessageRegistryLocal:
         message_registry.register_message(msg4, handler_name="h4")
 
         # "lonely" handler should be gone
-        assert "lonely" not in message_registry._handler_registry
+        assert "lonely" not in message_registry.get_by_handler("lonely")
