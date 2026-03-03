@@ -60,7 +60,7 @@ class ConversationDispatcher(BaseHandler[PTBUpdate, Context, None]):
         Process an update: if a conversation is active, run its current step
         and stop propagation. Otherwise, do nothing.
         """
-        logger.debug(f"Processing update {update.update_id}")
+        logger.trace(f"Processing update {update.update_id}")
         if context.user_data is None:
             logger.debug("No user data – passing through")
             return

@@ -87,7 +87,7 @@ def validate_handler(
 
     except Exception as e:
         # Type hint validation is best-effort
-        logger.debug(f"Could not validate type hints for '{func_name}': {e}")
+        logger.error(f"Could not validate type hints for '{func_name}': {e}")
 
 
 def is_valid_handler(func: Handler, silent: bool = True) -> bool:

@@ -1,7 +1,5 @@
-from loguru import logger
 from telegram.ext import (
     Application as PTBApplication,
-    CallbackQueryHandler,
 )
 from telegram.ext import ApplicationBuilder as PTBApplicationBuilder
 from telegram.ext import ContextTypes, ExtBot
@@ -42,8 +40,8 @@ class Application:
         token: str,
         database_provider: DatabaseProvider | None,
         routers: list[Router],
-        middlewares: list[Middleware] = [],
-        exception_handlers: list[tuple[type[Exception], HandlerProtocol]] = [],
+        middlewares: list[Middleware] | None = None,
+        exception_handlers: list[tuple[type[Exception], HandlerProtocol]] | None = None,
         webhook: WebhookConfig | None = None,
     ):
         """Initialize the application and register all handlers.
@@ -66,16 +64,9 @@ class Application:
         self.application.bot_data.dependency_container = DependencyContainer()
         self.application.bot_data.bot_client = PTBBotAdapter(self.application.bot)
         self.application.bot_data.conversation_registry = ConversationRegistry()
-        self.application.bot_data.middlewares = middlewares
-        self.application.bot_data.exception_handlers = exception_handlers
+        self.application.bot_data.middlewares = middlewares or []
+        self.application.bot_data.exception_handlers = exception_handlers or []
 
-        async def log_all(update, context):
-            logger.debug(f"Update {update.update_id} arrived")
-
-        self.application.add_handler(
-            CallbackQueryHandler(log_all, pattern=".*"),
-            group=-2,
-        )
         self.application.add_handler(ConversationDispatcher(), group=-1)
         for router in routers:
             self.application.add_handlers(router.get_handlers())

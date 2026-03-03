@@ -74,10 +74,6 @@ class MessageRegistry:
             dict()
         )  # mapping of handlers to chat_id list
 
-        logger.debug(
-            f"Initialized MessageRegistry: max_per_chat={max_messages_per_chat}, "
-        )
-
     def register_message(
         self,
         message: Message,
@@ -130,7 +126,7 @@ class MessageRegistry:
 
         if key:
             if key in self._key_registry:
-                logger.debug(f"Replacing existing key mapping: {key}")
+                logger.trace(f"Replacing existing key mapping: {key}")
             self._key_registry[key] = record
 
         if handler_name:
